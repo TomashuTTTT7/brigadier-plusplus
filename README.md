@@ -7,7 +7,7 @@ This port is not supported by Mojang nor Microsoft.
 IMPORTANT: brigadier-plusplus is not a one-to-one recreation of the original version. Some modifications were applied due to C++ specification and to make it easier to write command structure. I also tried to optimize memory and cpu usage as far as i could.
 
 ## Installation
-Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is no need for additional compilation. Code is compatible with compilers: **gcc, clang, msvc** and platforms: **windows and linux**.
+Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is also single-header version. There is no need for additional compilation. Code is compatible with compilers: **gcc, clang, msvc** and platforms: **windows and linux**.
 
 Tests are written and developed under Visual Studio 2022 using CppUnitTest framework.
 
@@ -19,7 +19,9 @@ At the heart of Brigadier, you need a `CommandDispatcher<S>`, where `<S>` is any
 
 A command dispatcher holds a "command tree", which is a series of `CommandNode`s that represent the various possible syntax options that form a valid command.
 
-### Registering a new command
+For more examples see [tests](brigadier-plusplus-test/brigadier).
+
+### Registering a new c1ommand
 Before we can start parsing and dispatching commands, we need to build up our command tree. Every registration is an append operation,
 so you can freely extend existing commands in a project without needing access to the source code that created them.
 
