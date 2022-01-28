@@ -1,6 +1,6 @@
 # brigadier-plusplus
 
-brigadier-plusplus is a port of Mojang's [brigadier](https://github.com/mojang/brigadier) command line parser & dispatcher, designed and developed for Minecraft: Java Edition and now freely available for use elsewhere under the MIT license.
+brigadier-plusplus is a C++ port of Mojang's [brigadier](https://github.com/mojang/brigadier) command line parser & dispatcher, designed and developed for Minecraft: Java Edition and now freely available for use elsewhere under the MIT license.
 
 This port is not supported by Mojang nor Microsoft.
 
@@ -21,7 +21,7 @@ A command dispatcher holds a "command tree", which is a series of `CommandNode`s
 
 For more examples see [tests](brigadier-plusplus-test/brigadier).
 
-### Registering a new c1ommand
+### Registering a new command
 Before we can start parsing and dispatching commands, we need to build up our command tree. Every registration is an append operation,
 so you can freely extend existing commands in a project without needing access to the source code that created them.
 
@@ -52,7 +52,7 @@ This snippet registers two "commands": `foo` and `foo <bar>`. It is also common 
 
 At the start of the tree is a "root node", and it should have `LiteralCommandNode`s as children (But arguments are allowed too). Here, we register one command under the root: `<Literal>("foo")`, which means "the user must type the literal string 'foo'".
 
-Under that is two extra definitions: a child node for possible further evaluation, or an `executes` block if the user input stops here.
+Under that is two extra definitions: a child node for possible further evaluation, or an `Executes` block if the user input stops here.
 
 The child node works exactly the same way, but is no longer limited to literals. The other type of node that is now allowed is an `ArgumentCommandNode`, which takes in a name and an argument type.
 
@@ -71,13 +71,13 @@ The result of `Execute` is an integer that was returned from an evaluated comman
 
 The `source` is an object of `<S>`, your own custom class to track users/players/etc. It will be provided to the command so that it has some context on what's happening.
 
-If the command failed or could not parse, some form of `CommandSyntaxException` will be thrown. It is also possible for a `RuntimeException` to be bubbled up, if not properly handled in a command.
+If the command failed or could not parse, some form of `CommandSyntaxException` will be thrown. It is also possible for a `std::runtime_error` to be bubbled up, if not properly handled in a command.
 
 If you wish to have more control over the parsing & executing of commands, or wish to cache the parse results so you can execute it multiple times, you can split it up into two steps:
 
-```java
+```cpp
 auto parse = dispatcher.Parse("foo 123", source);
-int result = execute(parse);
+int result = dispatcher.Execute(parse);
 ```
 
 This is highly recommended as the parse step is the most expensive, and may be easily cached depending on your application.
