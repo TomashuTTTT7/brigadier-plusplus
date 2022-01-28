@@ -65,11 +65,11 @@ namespace brigadier
             return children;
         }
 
-        inline CommandNode<S>* GetChild(std::string_view name) const
+        inline std::shared_ptr<CommandNode<S>> GetChild(std::string_view name) const
         {
             auto found = children.find(name);
             if (found != children.end())
-                return found->second.get();
+                return found->second;
             return nullptr;
         }
 

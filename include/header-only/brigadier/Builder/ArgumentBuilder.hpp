@@ -87,9 +87,9 @@ namespace brigadier
                 throw std::runtime_error("Cannot add children to a redirected node");
             }
             if (argument != nullptr) {
-                node->AddChild(argument);
+                node->AddChild(std::move(argument));
             }
-            return GetBuilder(std::move(argument));
+            return GetBuilder(std::move(node->GetChild(argument)));
         }
 
         template<typename T>
@@ -99,9 +99,9 @@ namespace brigadier
                 throw std::runtime_error("Cannot add children to a redirected node");
             }
             if (argument != nullptr) {
-                node->AddChild(argument);
+                node->AddChild(std::move(argument));
             }
-            return GetBuilder(std::move(argument));
+            return GetBuilder(std::move(node->GetChild(argument)));
         }
 
         B& Executes(Command<S> command)

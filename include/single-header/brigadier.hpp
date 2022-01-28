@@ -706,11 +706,11 @@ namespace brigadier
             return children;
         }
 
-        inline CommandNode<S>* GetChild(std::string_view name) const
+        inline std::shared_ptr<CommandNode<S>> GetChild(std::string_view name) const
         {
             auto found = children.find(name);
             if (found != children.end())
-                return found->second.get();
+                return found->second;
             return nullptr;
         }
 
@@ -2016,9 +2016,9 @@ namespace brigadier
                 throw std::runtime_error("Cannot add children to a redirected node");
             }
             if (argument != nullptr) {
-                node->AddChild(argument);
+                node->AddChild(std::move(argument));
             }
-            return GetBuilder(std::move(argument));
+            return GetBuilder(std::move(node->GetChild(argument)));
         }
 
         template<typename T>
@@ -2028,9 +2028,9 @@ namespace brigadier
                 throw std::runtime_error("Cannot add children to a redirected node");
             }
             if (argument != nullptr) {
-                node->AddChild(argument);
+                node->AddChild(std::move(argument));
             }
-            return GetBuilder(std::move(argument));
+            return GetBuilder(std::move(node->GetChild(argument)));
         }
 
         B& Executes(Command<S> command)
