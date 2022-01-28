@@ -804,4 +804,40 @@ namespace brigadier
                 dispatcher.Execute(*forkedRedirect);
         }
     };
+
+    TEST_CLASS(SourceCopyTest)
+    {
+        static inline int copies = 0;
+        static inline int moves  = 0;
+        struct CopyGuard
+        {
+            __declspec(noinline) CopyGuard() {}
+            __declspec(noinline) CopyGuard(CopyGuard const&) { ++copies; }
+            //__declspec(noinline) CopyGuard(CopyGuard&&) { ++moves; }
+        };
+
+        TEST_METHOD_INITIALIZE(setup) { copies = 0; moves = 0; }
+        TEST_METHOD_CLEANUP(cleanup)  { copies = 0; moves = 0; }
+
+        TEST_METHOD(CopyMoveTest)
+        {
+            using Src = CopyGuard;
+
+            CommandDispatcher<Src> dispatcher;
+
+            auto foo = dispatcher.Register<Literal>("foo");
+            foo.Then<Argument, Integer>("bar").Executes([](CommandContext<Src>& ctx) {
+                printf("Bar is %d\n", ctx.GetArgument<Integer>("bar"));
+                return 1;
+                });
+            foo.Executes([](CommandContext<Src>& ctx) {
+                puts("Called foo without arguments");
+                return 1;
+                });
+
+            dispatcher.Execute("foo 1", {});
+
+            printf("%d copies, %d moves", copies, moves);
+        }
+    };
 }

@@ -300,7 +300,7 @@ namespace brigadier
     template<typename S>
     inline CommandContext<S>& CommandContext<S>::WithSource(S source)
     {
-        context->source = source;
+        context->source = std::move(source);
         return *this;
     }
 

@@ -155,7 +155,7 @@ namespace brigadier
         int Execute(std::string_view input, S source)
         {
             StringReader reader = StringReader(input);
-            return Execute(reader, source);
+            return Execute(reader, std::move(source));
         }
 
         /**
@@ -190,7 +190,7 @@ namespace brigadier
         */
         int Execute(StringReader& input, S source)
         {
-            auto parse = Parse(input, source);
+            auto parse = Parse(input, std::move(source));
             return Execute(parse);
         }
 
