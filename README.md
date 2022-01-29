@@ -8,8 +8,9 @@ IMPORTANT: brigadier-plusplus is not a one-to-one recreation of the original ver
 
 ## Installation
 Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is also single-header version. There is no need for additional compilation. 
-For header-only version: `#include "brigadier/CommandDispatcher.hpp"`
-For single-header version: `#include "brigadier.hpp"`
+
+- For header-only version: `#include "brigadier/CommandDispatcher.hpp"`
+- For single-header version: `#include "brigadier.hpp"`
 
 ### Additional info:
 - C++17 language
@@ -17,6 +18,10 @@ For single-header version: `#include "brigadier.hpp"`
 - No RTTI
 - Compatible with gcc, clang, msvc compilers
 - Compatible for windows and linux platform
+
+### Optional features
+- If `"magic_enum.hpp"` is available, you can use enum type argument
+- If `"nameof.hpp"` is available, type names can be resolved automatically as you write new argument types
 
 
 Tests are written and developed under Visual Studio 2022 using CppUnitTest framework.
@@ -48,14 +53,14 @@ using S = CommandSourceStack;
 CommandDispatcher<S> dispatcher;
 
 auto foo = dispatcher.Register<Literal>("foo");
-    foo.Then<Argument, Integer>("bar").Executes([](CommandContext<S>& ctx) {
-        printf("Bar is %d\n", ctx.GetArgument<Integer>("bar"));
-        return 1;
-        });
-    foo.Executes([](CommandContext<S>& ctx) {
-        puts("Called foo without arguments");
-        return 1;
-        });
+foo.Then<Argument, Integer>("bar").Executes([](CommandContext<S>& ctx) {
+    printf("Bar is %d\n", ctx.GetArgument<Integer>("bar"));
+    return 1;
+});
+foo.Executes([](CommandContext<S>& ctx) {
+    puts("Called foo without arguments");
+    return 1;
+});
 ```
 
 This snippet registers two "commands": `foo` and `foo <bar>`. It is also common to refer to the `<bar>` as a "subcommand" of `foo`, as it's a child node.
