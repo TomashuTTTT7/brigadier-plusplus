@@ -7,7 +7,17 @@ This port is not supported by Mojang nor Microsoft.
 IMPORTANT: brigadier-plusplus is not a one-to-one recreation of the original version. Some modifications were applied due to C++ specification and to make it easier to write command structure. I also tried to optimize memory and cpu usage as far as i could.
 
 ## Installation
-Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is also single-header version. There is no need for additional compilation. Code is compatible with compilers: **gcc, clang, msvc** and platforms: **windows and linux**.
+Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is also single-header version. There is no need for additional compilation. 
+For header-only version: `#include "brigadier/CommandDispatcher.hpp"`
+For single-header version: `#include "brigadier.hpp"`
+
+### Additional info:
+- C++17 language
+- No external dependencies, standard library only
+- No RTTI
+- Compatible with gcc, clang, msvc compilers
+- Compatible for windows and linux platform
+
 
 Tests are written and developed under Visual Studio 2022 using CppUnitTest framework.
 
