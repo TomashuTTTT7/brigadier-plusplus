@@ -4,25 +4,26 @@
 
 namespace brigadier
 {
-    template<typename S>
-    class LiteralArgumentBuilder : public ArgumentBuilder<S, LiteralArgumentBuilder<S>, LiteralCommandNode<S>>
+    template<typename CharT, typename S>
+    class BasicLiteralArgumentBuilder : public BasicArgumentBuilder<CharT, S, BasicLiteralArgumentBuilder<CharT, S>, BasicLiteralCommandNode<CharT, S>>
     {
     public:
-        LiteralArgumentBuilder(std::shared_ptr<LiteralCommandNode<S>> node) : ArgumentBuilder<S, LiteralArgumentBuilder<S>, LiteralCommandNode<S>>(std::move(node)) {}
+        BasicLiteralArgumentBuilder(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> node) : BasicArgumentBuilder<S, BasicLiteralArgumentBuilder<CharT, S>, BasicLiteralCommandNode<CharT, S>>(std::move(node)) {}
     };
-    REGISTER_ARGTYPE_TEMPL(LiteralArgumentBuilder, Literal);
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(BasicLiteralArgumentBuilder, Literal);
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(LiteralArgumentBuilder);
 
     // single builder
-    template<typename S>
-    inline LiteralArgumentBuilder<S> GetBuilder(std::shared_ptr<LiteralCommandNode<S>> node)
+    template<typename CharT, typename S>
+    inline BasicLiteralArgumentBuilder<CharT, S> GetBuilder(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> node)
     {
-        return LiteralArgumentBuilder<S>(std::move(node));
+        return BasicLiteralArgumentBuilder<CharT, S>(std::move(node));
     }
 
     // new single builder
-    template<typename S, typename... Args>
-    inline LiteralArgumentBuilder<S> MakeLiteral(Args&&... args)
+    template<typename CharT, typename S, typename... Args>
+    inline BasicLiteralArgumentBuilder<CharT, S> MakeLiteral(Args&&... args)
     {
-        return LiteralArgumentBuilder<S>(std::make_shared<LiteralCommandNode<S>>(std::forward<Args>(args)...));
+        return BasicLiteralArgumentBuilder<CharT, S>(std::make_shared<BasicLiteralCommandNode<CharT, S>>(std::forward<Args>(args)...));
     }
 }

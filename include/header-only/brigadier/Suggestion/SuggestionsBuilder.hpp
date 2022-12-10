@@ -4,56 +4,57 @@
 
 namespace brigadier
 {
-    class SuggestionsBuilder
+    template<typename CharT>
+    class BasicSuggestionsBuilder
     {
     public:
-        SuggestionsBuilder(std::string_view input, std::string_view inputLowerCase, int start, bool* cancel = nullptr) : input(input), inputLowerCase(inputLowerCase), start(start), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
+        BasicSuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, int start, bool* cancel = nullptr) : input(input), inputLowerCase(inputLowerCase), start(start), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
 
         inline int GetStart() const { return start; }
-        inline std::string_view GetInput() const { return input; }
-        inline std::string_view GetInputLowerCase() const { return inputLowerCase; }
-        inline std::string_view GetRemaining() const { return remaining; }
-        inline std::string_view GetRemainingLowerCase() const { return remainingLowerCase; }
+        inline std::basic_string_view<CharT> GetInput() const { return input; }
+        inline std::basic_string_view<CharT> GetInputLowerCase() const { return inputLowerCase; }
+        inline std::basic_string_view<CharT> GetRemaining() const { return remaining; }
+        inline std::basic_string_view<CharT> GetRemainingLowerCase() const { return remainingLowerCase; }
 
-        Suggestions Build(bool* cancel = nullptr)
+        BasicSuggestions<CharT> Build(bool* cancel = nullptr)
         {
-            auto ret = Suggestions::Create(input, result, cancel);
+            auto ret = BasicSuggestions<CharT>::Create(input, result, cancel);
             if (cancel != nullptr) *cancel = false;
             result.clear();
             return ret;
         }
-        inline std::future<Suggestions> BuildFuture()
+        inline std::future<BasicSuggestions<CharT>> BuildFuture()
         {
-            return std::async(std::launch::async, &SuggestionsBuilder::Build, this, this->cancel);
+            return std::async(std::launch::async, &BasicSuggestionsBuilder<CharT>::Build, this, this->cancel);
         }
 
-        inline SuggestionsBuilder& Suggest(std::string_view text)
+        inline BasicSuggestionsBuilder<CharT>& Suggest(std::basic_string_view<CharT> text)
         {
             if (text == remaining) return *this;
 
-            result.emplace_back(StringRange::Between(start, input.length()), text);
+            result.emplace_back(BasicStringRange<CharT>::Between(start, input.length()), text);
             return *this;
         }
-        inline SuggestionsBuilder& Suggest(std::string_view text, std::string_view tooltip)
+        inline BasicSuggestionsBuilder<CharT>& Suggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip)
         {
             if (text == remaining) return *this;
 
-            result.emplace_back(StringRange::Between(start, input.length()), text, tooltip);
+            result.emplace_back(BasicStringRange<CharT>::Between(start, input.length()), text, tooltip);
             return *this;
         }
         template<typename T>
-        SuggestionsBuilder& Suggest(T value)
+        BasicSuggestionsBuilder<CharT>& Suggest(T value)
         {
-            result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()));
+            result.emplace_back(std::move(std::to_string(value)), BasicStringRange<CharT>::Between(start, input.length()));
             return *this;
         }
         template<typename T>
-        SuggestionsBuilder& Suggest(T value, std::string_view tooltip)
+        BasicSuggestionsBuilder<CharT>& Suggest(T value, std::basic_string_view<CharT> tooltip)
         {
-            result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()), tooltip);
+            result.emplace_back(std::move(std::to_string(value)), BasicStringRange<CharT>::Between(start, input.length()), tooltip);
             return *this;
         }
-        inline int AutoSuggest(std::string_view text, std::string_view input)
+        inline int AutoSuggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> input)
         {
             if (text.rfind(input.substr(0, text.length()), 0) == 0)
             {
@@ -62,7 +63,7 @@ namespace brigadier
             }
             return 0;
         }
-        inline int AutoSuggest(std::string_view text, std::string_view tooltip, std::string_view input)
+        inline int AutoSuggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip, std::basic_string_view<CharT> input)
         {
             if (text.rfind(input.substr(0, text.length()), 0) == 0)
             {
@@ -72,24 +73,24 @@ namespace brigadier
             return 0;
         }
         template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-        int AutoSuggest(T value, std::string_view input)
+        int AutoSuggest(T value, std::basic_string_view<CharT> input)
         {
-            std::string val = std::to_string(value);
+            std::basic_string<CharT> val = std::to_string(value);
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
-                result.emplace_back(std::move(val), StringRange::Between(start, input.length()));
+                result.emplace_back(std::move(val), BasicStringRange<CharT>::Between(start, input.length()));
                 return 1;
             }
             return 0;
         }
         template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-        int AutoSuggest(T value, std::string_view tooltip, std::string_view input)
+        int AutoSuggest(T value, std::basic_string_view<CharT> tooltip, std::basic_string_view<CharT> input)
         {
-            std::string val = std::to_string(value);
+            std::basic_string<CharT> val = std::to_string(value);
 
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
-                result.emplace_back(std::move(val), StringRange::Between(start, input.length()), tooltip);
+                result.emplace_back(std::move(val), BasicStringRange<CharT>::Between(start, input.length()), tooltip);
                 return 1;
             }
             return 0;
@@ -115,7 +116,7 @@ namespace brigadier
             return counter;
         }
 
-        inline SuggestionsBuilder& Add(SuggestionsBuilder const& other)
+        inline BasicSuggestionsBuilder<CharT>& Add(BasicSuggestionsBuilder<CharT> const& other)
         {
             result.insert(result.end(), other.result.begin(), other.result.end());
             return *this;
@@ -134,14 +135,15 @@ namespace brigadier
             result.clear();
         }
 
-        ~SuggestionsBuilder() = default;
+        ~BasicSuggestionsBuilder<CharT>() = default;
     private:
         int start = 0;
-        std::string_view input;
-        std::string_view inputLowerCase;
-        std::string_view remaining;
-        std::string_view remainingLowerCase;
-        std::vector<Suggestion> result;
+        std::basic_string_view<CharT> input;
+        std::basic_string_view<CharT> inputLowerCase;
+        std::basic_string_view<CharT> remaining;
+        std::basic_string_view<CharT> remainingLowerCase;
+        std::vector<BasicSuggestion<CharT>> result;
         bool* cancel = nullptr;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(SuggestionsBuilder);
 }

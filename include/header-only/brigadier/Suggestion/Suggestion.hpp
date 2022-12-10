@@ -2,28 +2,32 @@
 
 #include "../Context/StringRange.hpp"
 #include <cstring>
+#include <cwctype>
 
 namespace brigadier
 {
-    class Suggestions;
-    class SuggestionsBuilder;
+    template<typename CharT>
+    class BasicSuggestions;
+    template<typename CharT>
+    class BasicSuggestionsBuilder;
 
-    class Suggestion
+    template<typename CharT>
+    class BasicSuggestion
     {
     public:
-        Suggestion(StringRange range, std::string_view text, std::string_view tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        Suggestion(StringRange range, std::string_view text) : range(std::move(range)), text(std::move(text)) {}
+        BasicSuggestion(BasicStringRange<CharT> range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        BasicSuggestion(BasicStringRange<CharT> range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
 
-        inline StringRange GetRange() const { return range; }
-        inline std::string const& GetText() const { return text; }
-        inline std::string_view GetTooltip() const { return tooltip; }
+        inline BasicStringRange<CharT> GetRange() const { return range; }
+        inline std::basic_string<CharT> const& GetText() const { return text; }
+        inline std::basic_string_view<CharT> GetTooltip() const { return tooltip; }
 
-        std::string Apply(std::string_view input) const
+        std::basic_string<CharT> Apply(std::basic_string_view<CharT> input) const
         {
             if (range.GetStart() == 0 && range.GetEnd() == input.length()) {
                 return text;
             }
-            std::string result;
+            std::basic_string<CharT> result;
             result.reserve(range.GetStart() + text.length() + input.length() - (std::min)(range.GetEnd(), (int)input.length()));
             if (range.GetStart() > 0) {
                 result.append(input.substr(0, range.GetStart()));
@@ -35,7 +39,7 @@ namespace brigadier
             return result;
         }
 
-        void Expand(std::string_view command, StringRange range)
+        void Expand(std::basic_string_view<CharT> command, BasicStringRange<CharT> range)
         {
             if (this->range == range)
                 return;
@@ -50,24 +54,39 @@ namespace brigadier
             this->range = range;
         }
     protected:
-        friend class Suggestions;
-        friend class SuggestionsBuilder;
-        Suggestion(std::string text, StringRange range, std::string_view tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        Suggestion(std::string text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
+        friend class BasicSuggestions<CharT>;
+        friend class BasicSuggestionsBuilder<CharT>;
+        BasicSuggestion<CharT>(std::basic_string<CharT> text, BasicStringRange<CharT> range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        BasicSuggestion<CharT>(std::basic_string<CharT> text, BasicStringRange<CharT> range) : range(std::move(range)), text(std::move(text)) {}
     private:
-        StringRange range;
-        std::string text;
-        std::string_view tooltip;
+        BasicStringRange<CharT> range;
+        std::basic_string<CharT> text;
+        std::basic_string_view<CharT> tooltip;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(Suggestion);
 
+    template<typename CharT>
     struct CompareNoCase {
-        inline bool operator() (Suggestion const& a, Suggestion const& b) const
+        inline bool operator() (BasicSuggestion<CharT> const& a, BasicSuggestion<CharT> const& b) const
         {
-#ifdef __unix__
-            return strcasecmp(a.GetText().c_str(), b.GetText().c_str()) < 0;
-#else
-            return _stricmp  (a.GetText().c_str(), b.GetText().c_str()) < 0;
-#endif
+            auto& sa = a.GetText();
+            auto& sb = b.GetText();
+            if (sa.size() != sb.size())
+                return false;
+            for (size_t i = 0; i < sa.size(); ++i) {
+                if constexpr (std::is_same_v<std::remove_cv_t<CharT>, char>)
+                {
+                    if (std::tolower(sa[i]) != std::tolower(sb[i])) return false;
+                }
+                else if constexpr (std::is_same_v<std::remove_cv_t<CharT>, wchar_t>)
+                {
+                    if (std::towlower(sa[i]) != std::towlower(sb[i])) return false;
+                }
+                else {
+                    return sa == sb;
+                }
+            }
+            return true;
         }
     };
 }

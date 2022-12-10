@@ -13,25 +13,25 @@ namespace brigadier
     
     \param <S> a custom "source" type, such as a user or originator of a command
     */
-    template<typename S>
-    class CommandDispatcher
+    template<typename CharT, typename S>
+    class BasicCommandDispatcher
     {
     public:
         /**
         The string required to separate individual arguments in an input string
         */
-        static constexpr std::string_view ARGUMENT_SEPARATOR = " ";
+        static constexpr std::basic_string_view<CharT> ARGUMENT_SEPARATOR = BRIGADIER_LITERAL(CharT, " ");
 
         /**
         The char required to separate individual arguments in an input string
         */
-        static constexpr char ARGUMENT_SEPARATOR_CHAR = ' ';
+        static constexpr CharT ARGUMENT_SEPARATOR_CHAR = CharT(' ');
     private:
-        static constexpr std::string_view USAGE_OPTIONAL_OPEN = "[";
-        static constexpr std::string_view USAGE_OPTIONAL_CLOSE = "]";
-        static constexpr std::string_view USAGE_REQUIRED_OPEN = "(";
-        static constexpr std::string_view USAGE_REQUIRED_CLOSE = ")";
-        static constexpr std::string_view USAGE_OR = "|";
+        static constexpr std::basic_string_view<CharT> USAGE_OPTIONAL_OPEN = BRIGADIER_LITERAL(CharT, "[");
+        static constexpr std::basic_string_view<CharT> USAGE_OPTIONAL_CLOSE = BRIGADIER_LITERAL(CharT, "]");
+        static constexpr std::basic_string_view<CharT> USAGE_REQUIRED_OPEN = BRIGADIER_LITERAL(CharT, "(");
+        static constexpr std::basic_string_view<CharT> USAGE_REQUIRED_CLOSE = BRIGADIER_LITERAL(CharT, ")");
+        static constexpr std::basic_string_view<CharT> USAGE_OR = BRIGADIER_LITERAL(CharT, "|");
     public:
         /**
         Create a new CommandDispatcher with the specified root node.
@@ -40,12 +40,12 @@ namespace brigadier
         
         \param root the existing RootCommandNode to use as the basis for this tree
         */
-        CommandDispatcher(RootCommandNode<S>* root) : root(std::make_shared<RootCommandNode<S>>(*root)) {}
+        BasicCommandDispatcher(BasicRootCommandNode<CharT, S>* root) : root(std::make_shared<BasicRootCommandNode<CharT, S>>(*root)) {}
 
         /**
         Creates a new CommandDispatcher with an empty command tree.
         */
-        CommandDispatcher() : root(std::make_shared<RootCommandNode<S>>()) {}
+        BasicCommandDispatcher() : root(std::make_shared<BasicRootCommandNode<CharT, S>>()) {}
 
         /**
         Utility method for registering new commands.
@@ -57,14 +57,14 @@ namespace brigadier
         auto Register(Args&&... args)
         {
             if constexpr (std::is_same_v<Type, void>) {
-                using next_node = typename Next<S>::node_type;
+                using next_node = typename Next<CharT, S>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = root->children.find(name);
                 if (arg == root->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     root->AddChild(new_node);
-                    return Next<S>(std::move(new_node));
+                    return Next<CharT, S>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
@@ -73,7 +73,7 @@ namespace brigadier
                             throw std::runtime_error("Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
             else {
@@ -103,7 +103,7 @@ namespace brigadier
 
         \param consumer the new result consumer to be called
         */
-        void SetConsumer(ResultConsumer<S> consumer)
+        void SetConsumer(BasicResultConsumer<CharT, S> consumer)
         {
             this->consumer = consumer;
         }
@@ -117,7 +117,7 @@ namespace brigadier
 
         \return root of the command tree
         */
-        std::shared_ptr<RootCommandNode<S>> GetRoot() const
+        std::shared_ptr<BasicRootCommandNode<CharT, S>> GetRoot() const
         {
             return root;
         }
@@ -152,9 +152,9 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(StringReader, Object)
         */
-        int Execute(std::string_view input, S source)
+        int Execute(std::basic_string_view<CharT> input, S source)
         {
-            StringReader reader = StringReader(input);
+            BasicStringReader<CharT> reader = BasicStringReader<CharT>(input);
             return Execute(reader, std::move(source));
         }
 
@@ -188,7 +188,7 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        int Execute(StringReader& input, S source)
+        int Execute(BasicStringReader<CharT>& input, S source)
         {
             auto parse = Parse(input, std::move(source));
             return Execute(parse);
@@ -204,7 +204,7 @@ namespace brigadier
         entirely on what command was performed.
 
         If the command passes through a node that is CommandNode::IsFork() then it will be 'forked'.
-        A forked command will not bubble up any CommandSyntaxException's, and the 'result' returned will turn into
+        A forked command will not bubble up any CommandSyntaxException<CharT>'s, and the 'result' returned will turn into
         'amount of successful commands executes'.
 
         After each and any command is ran, a registered callback given to SetConsumer(ResultConsumer)
@@ -220,17 +220,17 @@ namespace brigadier
         \see Execute(String, Object)
         \see Execute(StringReader, Object)
         */
-        int Execute(ParseResults<S>& parse)
+        int Execute(ParseResults<CharT, S>& parse)
         {
             if (parse.GetReader().CanRead()) {
                 if (parse.GetExceptions().size() == 1) {
                     throw *parse.GetExceptions().begin();
                 }
                 else if (parse.GetContext().GetRange().IsEmpty()) {
-                    throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownCommand(parse.GetReader());
+                    throw exceptions::DispatcherUnknownCommand(parse.GetReader());
                 }
                 else {
-                    throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownArgument(parse.GetReader());
+                    throw exceptions::DispatcherUnknownArgument(parse.GetReader());
                 }
             }
 
@@ -241,17 +241,17 @@ namespace brigadier
             auto command = parse.GetReader().GetString();
             auto original = parse.GetContext();
             original.WithInput(command);
-            std::vector<CommandContext<S>> contexts = { original };
-            std::vector<CommandContext<S>> next;
+            std::vector<BasicCommandContext<CharT, S>> contexts = { original };
+            std::vector<BasicCommandContext<CharT, S>> next;
 
             while (!contexts.empty()) {
                 for (auto& context : contexts) {
-                    CommandContext<S>* child = context.GetChild();
+                    BasicCommandContext<CharT, S>* child = context.GetChild();
                     if (child != nullptr) {
                         forked |= context.IsForked();
                         if (child->HasNodes()) {
                             foundCommand = true;
-                            RedirectModifier<S> modifier = context.GetRedirectModifier();
+                            BasicRedirectModifier<CharT, S> modifier = context.GetRedirectModifier();
                             if (modifier == nullptr) {
                                 next.push_back(child->GetFor(context.GetSource()));
                             } else {
@@ -263,7 +263,7 @@ namespace brigadier
                                         }
                                     }
                                 }
-                                catch (CommandSyntaxException const& ex) {
+                                catch (BasicCommandSyntaxException<CharT> const& ex) {
                                     consumer(context, false, 0);
                                     if (!forked) {
                                         throw ex;
@@ -279,7 +279,7 @@ namespace brigadier
                             consumer(context, true, value);
                             successfulForks++;
                         }
-                        catch (CommandSyntaxException const& ex) {
+                        catch (BasicCommandSyntaxException<CharT> const& ex) {
                             consumer(context, false, 0);
                             if (!forked) {
                                 throw ex;
@@ -293,7 +293,7 @@ namespace brigadier
 
             if (!foundCommand) {
                 consumer(original, false, 0);
-                throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownCommand(parse.GetReader());
+                throw exceptions::DispatcherUnknownCommand(parse.GetReader());
             }
 
             return forked ? successfulForks : result;
@@ -310,7 +310,7 @@ namespace brigadier
 
         Parsing a command can never fail, you will always be provided with a new ParseResults.
         However, that does not mean that it will always parse into a valid command. You should inspect the returned results
-        to check for validity. If its ParseResults::GetReader() StringReader::CanRead() then it did not finish
+        to check for validity. If its ParseResults::GetReader() StringReader<CharT>::CanRead() then it did not finish
         parsing successfully. You can use that position as an indicator to the user where the command stopped being valid.
         You may inspect ParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
         not find any valid commands. It may contain multiple exceptions, one for each "potential node" that it could have visited,
@@ -326,9 +326,9 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<S> Parse(std::string_view command, S source)
+        ParseResults<CharT, S> Parse(std::basic_string_view<CharT> command, S source)
         {
-            StringReader reader = StringReader(command);
+            BasicStringReader<CharT> reader = BasicStringReader<CharT>(command);
             return Parse(reader, std::move(source));
         }
 
@@ -359,23 +359,23 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<S> Parse(StringReader& command, S source)
+        ParseResults<CharT, S> Parse(BasicStringReader<CharT>& command, S source)
         {
-            ParseResults<S> result(CommandContext<S>(std::move(source), root.get(), command.GetCursor()), command);
+            ParseResults<CharT, S> result(BasicCommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), command);
             ParseNodes(root.get(), result);
             return result;
         }
 
     private:
-        void ParseNodes(CommandNode<S>* node, ParseResults<S>& result)
+        void ParseNodes(BasicCommandNode<CharT, S>* node, ParseResults<CharT, S>& result)
         {
             if (!node)
                 return;
 
             S& source = result.context.GetSource();
 
-            std::optional<ParseResults<S>> best_potential = {};
-            std::optional<ParseResults<S>> current_result_ctx = {}; // delay initialization
+            std::optional<ParseResults<CharT, S>> best_potential = {};
+            std::optional<ParseResults<CharT, S>> current_result_ctx = {}; // delay initialization
 
             int cursor = result.reader.GetCursor();
 
@@ -395,26 +395,26 @@ namespace brigadier
                 }
                 else {
                     // create context
-                    current_result_ctx = ParseResults<S>(CommandContext<S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
+                    current_result_ctx = ParseResults<CharT, S>(BasicCommandContext<CharT, S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
                 }
 
                 auto& current_result = current_result_ctx.value();
 
-                StringReader& reader = current_result.reader;
-                CommandContext<S>& context = current_result.context;
+                BasicStringReader<CharT>& reader = current_result.reader;
+                BasicCommandContext<CharT, S>& context = current_result.context;
 
                 try {
                     try {
                         child->Parse(reader, context);
                     }
                     catch (std::runtime_error const& ex) {
-                        throw CommandSyntaxException::BuiltInExceptions::DispatcherParseException(reader, ex.what());
+                        throw exceptions::DispatcherParseException(reader, ex.what());
                     }
                     if (reader.CanRead() && reader.Peek() != ARGUMENT_SEPARATOR_CHAR) {
-                        throw CommandSyntaxException::BuiltInExceptions::DispatcherExpectedArgumentSeparator(reader);
+                        throw exceptions::DispatcherExpectedArgumentSeparator(reader);
                     }
                 }
-                catch (CommandSyntaxException ex) {
+                catch (BasicCommandSyntaxException<CharT> ex) {
                     result.exceptions.emplace(child.get(), std::move(ex));
                     reader.SetCursor(cursor);
                     continue;
@@ -425,7 +425,7 @@ namespace brigadier
                 if (reader.CanRead(child->GetRedirect() == nullptr ? 2 : 1)) {
                     reader.Skip();
                     if (child->GetRedirect() != nullptr) {
-                        ParseResults<S> child_result(CommandContext<S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
+                        ParseResults<CharT, S> child_result(BasicCommandContext<CharT, S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
                         ParseNodes(child->GetRedirect().get(), child_result);
                         result.context.Merge(std::move(context));
                         result.context.WithChildContext(std::move(child_result.context));
@@ -475,15 +475,15 @@ namespace brigadier
         \param restricted if true, commands that the source cannot access will not be mentioned
         \return array of full usage strings under the target node
         */
-        std::vector<std::string> GetAllUsage(CommandNode<S>* node, S source, bool restricted)
+        std::vector<std::basic_string<CharT>> GetAllUsage(BasicCommandNode<CharT, S>* node, S source, bool restricted)
         {
-            std::vector<std::string> result;
+            std::vector<std::basic_string<CharT>> result;
             GetAllUsage(node, std::move(source), result, {}, restricted);
             return result;
         }
 
     private:
-        void GetAllUsage(CommandNode<S>* node, S source, std::vector<std::string>& result, std::string prefix, bool restricted)
+        void GetAllUsage(BasicCommandNode<CharT, S>* node, S source, std::vector<std::basic_string<CharT>>& result, std::basic_string<CharT> prefix, bool restricted)
         {
             if (!node)
                 return;
@@ -511,7 +511,7 @@ namespace brigadier
             }
             else if (!node->GetChildren().empty()) {
                 for (auto const& [name, child] : node->GetChildren()) {
-                    std::string next_prefix = prefix;
+                    std::basic_string<CharT> next_prefix = prefix;
                     if (!next_prefix.empty()) {
                         next_prefix += ARGUMENT_SEPARATOR;
                     }
@@ -541,12 +541,12 @@ namespace brigadier
         \param source a custom "source" object, usually representing the originator of this command
         \return array of full usage strings under the target node
         */
-        std::map<CommandNode<S>*, std::string> GetSmartUsage(CommandNode<S>* node, S source)
+        std::map<BasicCommandNode<CharT, S>*, std::basic_string<CharT>> GetSmartUsage(BasicCommandNode<CharT, S>* node, S source)
         {
-            std::map<CommandNode<S>*, std::string> result;
+            std::map<BasicCommandNode<CharT, S>*, std::basic_string<CharT>> result;
 
             for (auto const& [name, child] : node->GetChildren()) {
-                std::string usage = GetSmartUsage(child.get(), std::move(source), node->GetCommand() != nullptr, false);
+                std::basic_string<CharT> usage = GetSmartUsage(child.get(), std::move(source), node->GetCommand() != nullptr, false);
                 if (!usage.empty()) {
                     result[child.get()] = std::move(usage);
                 }
@@ -555,7 +555,7 @@ namespace brigadier
         }
 
     private:
-        std::string GetSmartUsage(CommandNode<S>* node, S source, bool optional, bool deep)
+        std::basic_string<CharT> GetSmartUsage(BasicCommandNode<CharT, S>* node, S source, bool optional, bool deep)
         {
             if (!node)
                 return {};
@@ -563,7 +563,7 @@ namespace brigadier
             if (!node->CanUse(source))
                 return {};
 
-            std::string self;
+            std::basic_string<CharT> self;
             if (optional) {
                 self = USAGE_OPTIONAL_OPEN;
                 self += node->GetUsageText();
@@ -573,8 +573,8 @@ namespace brigadier
                 self = node->GetUsageText();
             }
             const bool childOptional = node->GetCommand() != nullptr;
-            std::string_view open = childOptional ? USAGE_OPTIONAL_OPEN : USAGE_REQUIRED_OPEN;
-            std::string_view close = childOptional ? USAGE_OPTIONAL_CLOSE : USAGE_REQUIRED_CLOSE;
+            std::basic_string_view<CharT> open = childOptional ? USAGE_OPTIONAL_OPEN : USAGE_REQUIRED_OPEN;
+            std::basic_string_view<CharT> close = childOptional ? USAGE_OPTIONAL_CLOSE : USAGE_REQUIRED_CLOSE;
 
             if (!deep) {
                 if (node->GetRedirect()) {
@@ -589,14 +589,14 @@ namespace brigadier
                     return self;
                 }
                 else {
-                    std::vector<CommandNode<S>*> children;
+                    std::vector<BasicCommandNode<CharT, S>*> children;
                     for (auto const& [name, child] : node->GetChildren()) {
                         if (child->CanUse(source)) {
                             children.push_back(child.get());
                         }
                     }
                     if (children.size() == 1) {
-                        std::string usage = GetSmartUsage(children[0], source, childOptional, childOptional);
+                        std::basic_string<CharT> usage = GetSmartUsage(children[0], source, childOptional, childOptional);
                         if (!usage.empty()) {
                             self += ARGUMENT_SEPARATOR;
                             self += std::move(usage);
@@ -604,15 +604,15 @@ namespace brigadier
                         }
                     }
                     else if (children.size() > 1) {
-                        std::set<std::string> childUsage;
+                        std::set<std::basic_string<CharT>> childUsage;
                         for (auto child : children) {
-                            std::string usage = GetSmartUsage(child, source, childOptional, true);
+                            std::basic_string<CharT> usage = GetSmartUsage(child, source, childOptional, true);
                             if (!usage.empty()) {
                                 childUsage.insert(usage);
                             }
                         }
                         if (childUsage.size() == 1) {
-                            std::string usage = *childUsage.begin();
+                            std::basic_string<CharT> usage = *childUsage.begin();
                             self += ARGUMENT_SEPARATOR;
                             if (childOptional) {
                                 self += USAGE_OPTIONAL_OPEN;
@@ -623,7 +623,7 @@ namespace brigadier
                             return self;
                         }
                         else if (childUsage.size() > 1) {
-                            std::string builder(open);
+                            std::basic_string<CharT> builder(open);
                             int count = 0;
                             for (auto child : children) {
                                 if (count > 0) {
@@ -662,7 +662,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(ParseResults<S>& parse, bool* cancel = nullptr)
+        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -684,24 +684,24 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(ParseResults<S>& parse, int cursor, bool* cancel = nullptr)
+        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, int cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<S>* parse, int cursor, bool* cancel) {
+            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, int cursor, bool* cancel) {
                 auto context = parse->GetContext();
 
-                SuggestionContext<S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
-                CommandNode<S>* parent = nodeBeforeCursor.parent;
+                BasicSuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
+                BasicCommandNode<CharT, S>* parent = nodeBeforeCursor.parent;
                 int start = (std::min)(nodeBeforeCursor.startPos, cursor);
 
-                std::string_view fullInput = parse->GetReader().GetString();
-                std::string_view truncatedInput = fullInput.substr(0, cursor);
-                std::string truncatedInputLowerCase(truncatedInput);
+                std::basic_string_view<CharT> fullInput = parse->GetReader().GetString();
+                std::basic_string_view<CharT> truncatedInput = fullInput.substr(0, cursor);
+                std::basic_string<CharT> truncatedInputLowerCase(truncatedInput);
                 std::transform(truncatedInputLowerCase.begin(), truncatedInputLowerCase.end(), truncatedInputLowerCase.begin(), [](char c) { return std::tolower(c); });
 
                 context.WithInput(truncatedInput);
 
-                std::vector<std::future<Suggestions>> futures;
-                std::vector<SuggestionsBuilder> builders;
+                std::vector<std::future<BasicSuggestions<CharT>>> futures;
+                std::vector<BasicSuggestionsBuilder<CharT>> builders;
                 size_t max_size = parent->GetChildren().size();
                 futures.reserve(max_size);
                 builders.reserve(max_size);
@@ -710,15 +710,15 @@ namespace brigadier
                         builders.emplace_back(truncatedInput, truncatedInputLowerCase, start, cancel);
                         futures.push_back(node->ListSuggestions(context, builders.back()));
                     }
-                    catch (CommandSyntaxException const&) {}
+                    catch (BasicCommandSyntaxException<CharT> const&) {}
                 }
 
-                std::vector<Suggestions> suggestions;
+                std::vector<BasicSuggestions<CharT>> suggestions;
                 for (auto& future : futures)
                 {
                     suggestions.emplace_back(future.get());
                 }
-                return Suggestions::Merge(fullInput, suggestions);
+                return BasicSuggestions<CharT>::Merge(fullInput, suggestions);
             }, &parse, cursor, cancel);
         }
 
@@ -736,14 +736,14 @@ namespace brigadier
         \param target the target node you are finding a path for
         \return a path to the resulting node, or an empty list if it was not found
         */
-        std::vector<std::string> GetPath(CommandNode<S>* target)
+        std::vector<std::basic_string<CharT>> GetPath(BasicCommandNode<CharT, S>* target)
         {
-            std::vector<std::vector<CommandNode<S>*>> nodes;
+            std::vector<std::vector<BasicCommandNode<CharT, S>*>> nodes;
             AddPaths(root.get(), nodes, {});
 
-            for (std::vector<CommandNode<S>*>& list : nodes) {
+            for (std::vector<BasicCommandNode<CharT, S>*>& list : nodes) {
                 if (list.back() == target) {
-                    std::vector<std::string> result;
+                    std::vector<std::basic_string<CharT>> result;
                     result.reserve(list.size());
                     for (auto node : list) {
                         if (node != root.get()) {
@@ -768,8 +768,8 @@ namespace brigadier
         \param path a generated path to a node
         \return the node at the given path, or null if not found
         */
-        CommandNode<S>* FindNode(std::vector<std::string> const& path) {
-            CommandNode<S>* node = root.get();
+        BasicCommandNode<CharT, S>* FindNode(std::vector<std::basic_string<CharT>> const& path) {
+            BasicCommandNode<CharT, S>* node = root.get();
             for (auto& name : path) {
                 node = node->GetChild(name);
                 if (node == nullptr) {
@@ -790,13 +790,13 @@ namespace brigadier
 
         \param consumer a callback to be notified of potential ambiguities
         */
-        void FindAmbiguities(AmbiguityConsumer<S> consumer) {
+        void FindAmbiguities(BasicAmbiguityConsumer<CharT, S> consumer) {
             if (!consumer) return;
             root->FindAmbiguities(consumer);
         }
 
     private:
-        void AddPaths(CommandNode<S>* node, std::vector<std::vector<CommandNode<S>*>>& result, std::vector<CommandNode<S>*> parents) {
+        void AddPaths(BasicCommandNode<CharT, S>* node, std::vector<std::vector<BasicCommandNode<CharT, S>*>>& result, std::vector<BasicCommandNode<CharT, S>*> parents) {
             parents.push_back(node);
             result.push_back(parents);
 
@@ -806,7 +806,8 @@ namespace brigadier
         }
 
     private:
-        std::shared_ptr<RootCommandNode<S>> root;
-        ResultConsumer<S> consumer = [](CommandContext<S>& context, bool success, int result) {};
+        std::shared_ptr<BasicRootCommandNode<CharT, S>> root;
+        BasicResultConsumer<CharT, S> consumer = [](BasicCommandContext<CharT, S>& context, bool success, int result) {};
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandDispatcher);
 }

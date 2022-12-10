@@ -4,13 +4,14 @@
 
 namespace brigadier
 {
-    template<typename S>
-    class SuggestionContext
+    template<typename CharT, typename S>
+    class BasicSuggestionContext
     {
     public:
-        SuggestionContext(CommandNode<S>* parent, int startPos) : parent(parent), startPos(startPos) {}
+        BasicSuggestionContext(BasicCommandNode<CharT, S>* parent, size_t startPos) : parent(parent), startPos(startPos) {}
 
-        CommandNode<S>* parent;
-        int startPos;
+        BasicCommandNode<CharT, S>* parent;
+        size_t startPos;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(SuggestionContext);
 }

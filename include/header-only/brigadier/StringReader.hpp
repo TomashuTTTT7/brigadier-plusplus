@@ -2,87 +2,123 @@
 
 #include <string>
 #include <string_view>
-#include <sstream>
+#include <istream>
+#include <streambuf>
+#include "Common.hpp"
 
 namespace brigadier
 {
-    class StringReader
+    template<typename CharT, typename traits = std::char_traits<CharT>>
+    class basic_stringviewbuf : public std::basic_streambuf<CharT, traits>
     {
-    private:
-        static constexpr char SYNTAX_ESCAPE       = '\\';
-        static constexpr char SYNTAX_SINGLE_QUOTE = '\'';
-        static constexpr char SYNTAX_DOUBLE_QUOTE = '"';
-
-    public:
-        StringReader(std::string_view string) : string(string) {}
-        StringReader() {}
-
-        inline std::string_view GetString()           const { return string; }
-        inline void             SetCursor(int cursor)       { this->cursor = cursor; }
-        inline int              GetRemainingLength()  const { return string.length() - cursor; }
-        inline int              GetTotalLength()      const { return string.length(); }
-        inline int              GetCursor()           const { return cursor; }
-        inline std::string_view GetRead()             const { return string.substr(0, cursor); }
-        inline std::string_view GetRemaining()        const { return string.substr(cursor); }
-        inline bool             CanRead(int length)   const { return (size_t)(cursor + length) <= string.length(); }
-        inline bool             CanRead()             const { return CanRead(1); }
-        inline char             Peek()                const { return Peek(0); }
-        inline char             Peek(int offset)      const { return string.at(cursor + offset); }
-        inline char             Read()                      { return string.at(cursor++); }
-        inline void             Skip()                      { cursor++; }
-
-        inline static bool IsQuotedStringStart(char c)
+        using base = std::basic_streambuf<CharT, traits>;
+    protected:
+        base::pos_type seekoff(base::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
         {
-            return c == SYNTAX_DOUBLE_QUOTE || c == SYNTAX_SINGLE_QUOTE;
+            if (dir == std::ios_base::cur)
+                this->gbump(off);
+            else if (dir == std::ios_base::end)
+                this->setg(this->eback(), this->egptr() + off, this->egptr());
+            else if (dir == std::ios_base::beg)
+                this->setg(this->eback(), this->eback() + off, this->egptr());
+            return this->gptr() - this->eback();
         }
 
-        inline void SkipWhitespace()
-        {
+        base::pos_type seekpos(base::pos_type sp, std::ios_base::openmode which) override {
+            return seekoff(sp - base::pos_type(base::off_type(0)), std::ios_base::beg, which);
+        }
+    public:
+        basic_stringviewbuf(CharT const* s, size_t count) {
+            auto p = const_cast<CharT*>(s);
+            this->setg(p, p, p + count);
+        }
+        basic_stringviewbuf(std::basic_string_view<CharT> s) : basic_stringviewbuf(s.data(), s.size()) {}
+    };
+    using stringviewbuf = basic_stringviewbuf<char>;
+    using wstringviewbuf = basic_stringviewbuf<wchar_t>;
+
+    template<typename CharT, typename traits = std::char_traits<CharT>>
+    class basic_istringviewstream : public std::basic_istream<CharT, traits> {
+    public:
+        basic_istringviewstream(std::basic_string_view<CharT> s) : std::basic_istream<CharT, traits>(&buf), buf(s) {}
+    private:
+        basic_stringviewbuf<CharT, traits> buf;
+    };
+    using istringviewstream = basic_istringviewstream<char>;
+    using wistringviewstream = basic_istringviewstream<wchar_t>;
+
+
+    template<typename CharT>
+    class BasicStringReader
+    {
+    private:
+        static constexpr CharT SYNTAX_ESCAPE       = CharT('\\');
+        static constexpr CharT SYNTAX_SINGLE_QUOTE = CharT('\'');
+        static constexpr CharT SYNTAX_DOUBLE_QUOTE = CharT('\"');
+    public:
+        BasicStringReader(std::basic_string_view<CharT> string) : string(string) {}
+        BasicStringReader() {}
+
+        inline std::basic_string_view<CharT> GetString()                const { return string; }
+        inline void                          SetCursor(size_t cursor)         { this->cursor = cursor; }
+        inline ptrdiff_t                     GetRemainingLength()       const { return string.length() - cursor; }
+        inline size_t                        GetTotalLength()           const { return string.length(); }
+        inline size_t                        GetCursor()                const { return cursor; }
+        inline std::basic_string_view<CharT> GetRead()                  const { return string.substr(0, cursor); }
+        inline std::basic_string_view<CharT> GetRemaining()             const { return string.substr(cursor); }
+        inline bool                          CanRead(size_t length = 1) const { return (cursor + length) <= string.length(); }
+        inline CharT                         Peek(size_t offset = 0)    const { return string.at(cursor + offset); }
+        inline CharT                         Read()                           { return string.at(cursor++); }
+        inline void                          Skip()                           { cursor++; }
+    public:
+        inline void SkipWhitespace() {
             while (CanRead() && std::isspace(Peek())) {
                 Skip();
             }
         }
-
-        template<typename T>
-        inline T ReadValue();
-        template<typename T>
-        inline T ReadValueUntil(char terminator);
-        template<typename T>
-        inline T ReadValueUntilOneOf(const char* terminators);
-
-        inline static bool IsAllowedInUnquotedString(char c)
-        {
-            return (c >= '0' && c <= '9')
-                || (c >= 'A' && c <= 'Z')
-                || (c >= 'a' && c <= 'z')
-                || (c == '_' || c == '-')
-                || (c == '.' || c == '+');
-        }
-
-        template<bool allow_float = true, bool allow_negative = true>
-        inline static bool IsAllowedNumber(char c)
-        {
-            return c >= '0' && c <= '9' || (allow_float && c == '.') || (allow_negative && c == '-');
-        }
-
-        inline std::string_view ReadUnquotedString();
-        inline std::string      ReadQuotedString();
-        inline std::string      ReadStringUntil(char terminator);
-        inline std::string      ReadStringUntilOneOf(const char* terminators);
-        inline std::string      ReadString();
-        inline void             Expect(char c);
-
+    public:
+        inline std::basic_string_view<CharT> ReadUnquotedString();
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntil(CharT terminator);
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntilOneOf(CharT const* terminators);
+        inline std::basic_string<CharT>      ReadString();
+        inline std::basic_string<CharT>      ReadStringUntil(CharT terminator);
+        inline std::basic_string<CharT>      ReadStringUntilOneOf(CharT const* terminators);
+        inline std::basic_string<CharT>      ReadQuotedString();
+        inline void                          Expect(CharT c);
     private:
-        std::string_view string;
-        int cursor = 0;
+        template<typename T>
+        T ParseValue(std::basic_string_view<CharT> value, size_t start);
+    public:
+        template<typename T>
+        T ReadValue();
+    public:
+        inline static bool IsAllowedInUnquotedString(CharT c) {
+            return (c >= CharT('0') && c <= CharT('9'))
+                || (c >= CharT('A') && c <= CharT('Z'))
+                || (c >= CharT('a') && c <= CharT('z'))
+                || (c == CharT('_') || c == CharT('-'))
+                || (c == CharT('.') || c == CharT('+'));
+        }
+        inline static bool IsQuotedStringStart(char c) {
+            return c == SYNTAX_DOUBLE_QUOTE || c == SYNTAX_SINGLE_QUOTE;
+        }
+        template<bool allow_float = true, bool allow_negative = true>
+        inline static bool IsAllowedNumber(char c) {
+            return c >= CharT('0') && c <= CharT('9') || (allow_float && c == CharT('.')) || (allow_negative && c == CharT('-'));
+        }
+    private:
+        std::basic_string_view<CharT> string;
+        size_t cursor = 0;
     };
+    BRIGADIER_SPECIALIZE_BASIC(StringReader);
 }
 
 #include "Exceptions/Exceptions.hpp"
 
 namespace brigadier
 {
-    std::string_view StringReader::ReadUnquotedString()
+    template<typename CharT>
+    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedString()
     {
         int start = cursor;
         while (CanRead() && IsAllowedInUnquotedString(Peek())) {
@@ -91,22 +127,57 @@ namespace brigadier
         return string.substr(start, cursor - start);
     }
 
-    std::string StringReader::ReadQuotedString()
+    template<typename CharT>
+    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedStringUntil(CharT terminator)
+    {
+        size_t start = cursor;
+        while (CanRead()) {
+            CharT c = Peek();
+            if (!IsAllowedInUnquotedString(c))
+                break;
+            if (c == terminator)
+                break;
+            Skip();
+        }
+        return string.substr(start, cursor - start);
+    }
+
+    template<typename CharT>
+    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedStringUntilOneOf(CharT const* terminators)
+    {
+        size_t start = cursor;
+        while (CanRead()) {
+            CharT c = Peek();
+            if (!IsAllowedInUnquotedString(c))
+                break;
+            for (CharT const* t = terminators; *t != 0; t++) {
+                if (c == *t) {
+                    return string.substr(start, cursor - start);
+                }
+            }
+            Skip();
+        }
+        return string.substr(start, cursor - start);
+    }
+
+    template<typename CharT>
+    std::basic_string<CharT> BasicStringReader<CharT>::ReadString()
     {
         if (!CanRead()) {
             return {};
         }
         char next = Peek();
-        if (!IsQuotedStringStart(next)) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedStartOfQuote(*this);
+        if (IsQuotedStringStart(next)) {
+            Skip();
+            return ReadStringUntil(next);
         }
-        Skip();
-        return ReadStringUntil(next);
+        return std::basic_string<CharT>(ReadUnquotedString());
     }
 
-    std::string StringReader::ReadStringUntil(char terminator)
+    template<typename CharT>
+    std::basic_string<CharT> BasicStringReader<CharT>::ReadStringUntil(CharT terminator)
     {
-        std::string result;
+        std::basic_string<CharT> result;
         result.reserve(GetRemainingLength());
 
         bool escaped = false;
@@ -119,7 +190,7 @@ namespace brigadier
                 }
                 else {
                     SetCursor(GetCursor() - 1);
-                    throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidEscape(*this, c);
+                    throw exceptions::ReaderInvalidEscape(*this, c);
                 }
             }
             else if (c == SYNTAX_ESCAPE) {
@@ -133,12 +204,18 @@ namespace brigadier
             }
         }
 
-        throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedEndOfQuote(*this);
+        if (IsQuotedStringStart(terminator)) {
+            throw exceptions::ReaderExpectedEndOfQuote(*this);
+        }
+        else {
+            throw exceptions::ReaderExpectedSymbol(*this, terminator);
+        }
     }
 
-    std::string StringReader::ReadStringUntilOneOf(const char* terminators)
+    template<typename CharT>
+    std::basic_string<CharT> BasicStringReader<CharT>::ReadStringUntilOneOf(CharT const* terminators)
     {
-        std::string result;
+        std::basic_string<CharT> result;
         result.reserve(GetRemainingLength());
 
         bool escaped = false;
@@ -160,7 +237,7 @@ namespace brigadier
                 }
                 if (escaped) {
                     SetCursor(GetCursor() - 1);
-                    throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidEscape(*this, c);
+                    throw exceptions::ReaderInvalidEscape(*this, c);
                 }
             }
             else if (c == SYNTAX_ESCAPE) {
@@ -176,76 +253,92 @@ namespace brigadier
             }
         }
 
-        throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedOneOf(*this, terminators);
+        throw exceptions::ReaderExpectedOneOf(*this, terminators);
     }
 
-    std::string StringReader::ReadString()
+    template<typename CharT>
+    std::basic_string<CharT> BasicStringReader<CharT>::ReadQuotedString()
     {
         if (!CanRead()) {
             return {};
         }
         char next = Peek();
-        if (IsQuotedStringStart(next)) {
-            Skip();
-            return ReadStringUntil(next);
+        if (!IsQuotedStringStart(next)) {
+            throw exceptions::ReaderExpectedStartOfQuote(*this);
         }
-        return std::string(ReadUnquotedString());
+        Skip();
+        return ReadStringUntil(next);
     }
 
-    void StringReader::Expect(char c)
+    template<typename CharT>
+    void BasicStringReader<CharT>::Expect(CharT c)
     {
         if (!CanRead() || Peek() != c) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedSymbol(*this, c);
+            throw exceptions::ReaderExpectedSymbol(*this, c);
         }
         Skip();
     }
 
+    template<typename CharT>
     template<typename T>
-    T StringReader::ReadValue()
+    T BasicStringReader<CharT>::ParseValue(std::basic_string_view<CharT> value, size_t start)
     {
-        int start = cursor;
-        std::string value;
-        if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
-        {
-            while (CanRead() && IsAllowedNumber<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
-                Skip();
-            }
-            value = string.substr(start, cursor - start);
-        }
-        else
-        {
-            value = ReadString();
-        }
-
         if (value.empty()) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedValue(*this);
+            throw exceptions::ReaderExpectedValue(*this);
         }
 
-        if constexpr (std::is_same_v<T, bool>)
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>)
         {
             /**/ if (value == "true")
                 return true;
             else if (value == "false")
                 return false;
-            else
-            {
+            else {
                 cursor = start;
-                throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidValue(*this, value);
+                throw exceptions::ReaderInvalidValue(*this, value);
             }
         }
         else
         {
             T ret{};
-            std::istringstream s(value);
+            //std::basic_istringstream<CharT> s(std::basic_string<CharT>(value));
+            basic_istringviewstream<CharT> s(value);
             s >> ret;
 
             if (s.eof() && !s.bad() && !s.fail())
                 return ret;
-            else
-            {
+            else {
                 cursor = start;
-                throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidValue(*this, value);
+                throw exceptions::ReaderInvalidValue(*this, value);
             }
+        }
+    }
+
+    template<typename CharT>
+    template<typename T>
+    T BasicStringReader<CharT>::ReadValue()
+    {
+        if (!CanRead()) {
+            throw exceptions::ReaderExpectedValue(*this);
+        }
+
+        size_t start = cursor;
+
+        if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
+        {
+            while (CanRead() && is_allowed_number<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
+                Skip();
+            }
+            return ParseValue<T>(string.substr(start, cursor - start));
+        }
+        else
+        {
+            char next = Peek();
+            if (IsQuotedStringStart(next)) {
+                Skip();
+                return ParseValue<T>(ReadStringUntil(next));
+            }
+            return ParseValue<T>(ReadUnquotedString());
         }
     }
 }

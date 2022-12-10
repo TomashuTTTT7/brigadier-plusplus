@@ -1,35 +1,34 @@
 #pragma once
 
 #include "Context/CommandContext.hpp"
-
 #include <map>
 
 namespace brigadier
 {
-    template<typename S>
-    class CommandDispatcher;
+    template<typename CharT, typename S>
+    class BasicCommandDispatcher;
 
-    template<typename S>
+    template<typename CharT, typename S>
     class ParseResults
     {
     public:
-        ParseResults(CommandContext<S> context, StringReader reader, std::map<CommandNode<S>*, CommandSyntaxException> exceptions)
+        ParseResults(BasicCommandContext<CharT, S> context, BasicStringReader<CharT> reader, std::map<BasicCommandNode<CharT, S>*, BasicCommandSyntaxException<CharT>> exceptions)
             : context(std::move(context))
             , reader(std::move(reader))
             , exceptions(std::move(exceptions))
         {}
-        ParseResults(CommandContext<S> context, StringReader reader)
+        ParseResults(BasicCommandContext<CharT, S> context, BasicStringReader<CharT> reader)
             : context(std::move(context))
             , reader(std::move(reader))
         {}
 
-        ParseResults(CommandContext<S> context) : ParseResults(std::move(context), StringReader()) {}
+        ParseResults(BasicCommandContext<CharT, S> context) : ParseResults(std::move(context), BasicStringReader<CharT>()) {}
     public:
-        inline CommandContext<S> const& GetContext() const { return context; }
-        inline StringReader      const& GetReader()  const { return reader;  }
-        inline std::map<CommandNode<S>*, CommandSyntaxException> const& GetExceptions() const { return exceptions; }
+        inline BasicCommandContext<CharT, S> const& GetContext() const { return context; }
+        inline BasicStringReader<CharT> const& GetReader()  const { return reader; }
+        inline std::map<BasicCommandNode<CharT, S>*, BasicCommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
 
-        inline bool IsBetterThan(ParseResults<S> const& other) const
+        inline bool IsBetterThan(ParseResults<CharT, S> const& other) const
         {
             if (!GetReader().CanRead() && other.GetReader().CanRead()) {
                 return true;
@@ -46,28 +45,27 @@ namespace brigadier
             return false;
         }
 
-        inline void Reset(StringReader new_reader)
+        inline void Reset(BasicStringReader<CharT> new_reader)
         {
             exceptions.clear();
             reader = std::move(new_reader);
         }
-        inline void Reset(S source, CommandNode<S>* root, int start, StringReader reader = {})
+        inline void Reset(S source, BasicCommandNode<CharT, S>* root, int start, BasicStringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, start);
         }
-        inline void Reset(S source, CommandNode<S>* root, StringRange range, StringReader reader = {})
+        inline void Reset(S source, BasicCommandNode<CharT, S>* root, BasicStringRange<CharT> range, BasicStringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, std::move(range));
         }
-
     private:
-        template<typename _S>
-        friend class CommandDispatcher;
+        template<typename, typename>
+        friend class BasicCommandDispatcher;
 
-        CommandContext<S> context;
-        std::map<CommandNode<S>*, CommandSyntaxException> exceptions;
-        StringReader reader;
+        BasicCommandContext<CharT, S> context;
+        std::map<BasicCommandNode<CharT, S>*, BasicCommandSyntaxException<CharT>> exceptions;
+        BasicStringReader<CharT> reader;
     };
 }

@@ -4,24 +4,25 @@
 
 namespace brigadier
 {
-    template<typename S>
-    class RootCommandNode : public CommandNode<S>
+    template<typename CharT, typename S>
+    class BasicRootCommandNode : public BasicCommandNode<CharT, S>
     {
     public:
-        RootCommandNode() : CommandNode<S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
+        BasicRootCommandNode() : BasicCommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<CharT, S> { return { s.GetSource() }; }, false) {}
 
-        virtual ~RootCommandNode() = default;
-        virtual std::string const& GetName() { static const std::string blank; return blank; }
-        virtual std::string GetUsageText() { return {}; }
-        virtual std::vector<std::string_view> GetExamples() { return {}; }
-        virtual void Parse(StringReader& reader, CommandContext<S>& contextBuilder) {}
-        virtual std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
+        virtual ~BasicRootCommandNode() = default;
+        virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }
+        virtual std::basic_string<CharT> GetUsageText() { return {}; }
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return {}; }
+        virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder) {}
+        virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
         {
-            return Suggestions::Empty();
+            return BasicSuggestions<CharT>::Empty();
         }
         virtual CommandNodeType GetNodeType() { return CommandNodeType::RootCommandNode; }
     protected:
-        virtual bool IsValidInput(std::string_view input) { return false; }
-        virtual std::string_view GetSortedKey() { return {}; }
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) { return false; }
+        virtual std::basic_string_view<CharT> GetSortedKey() { return {}; }
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(RootCommandNode);
 }

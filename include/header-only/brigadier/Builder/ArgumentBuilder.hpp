@@ -4,25 +4,25 @@
 
 namespace brigadier
 {
-    template<typename S, typename B, typename NodeType>
-    class ArgumentBuilder
+    template<typename CharT, typename S, typename B, typename NodeType>
+    class BasicArgumentBuilder
     {
     public:
         using node_type = NodeType;
     public:
-        ArgumentBuilder(std::shared_ptr<node_type> node)
+        BasicArgumentBuilder(std::shared_ptr<node_type> node)
         {
             if (node) this->node = std::move(node);
             else throw std::runtime_error("Cannot build empty node");
         }
-        ArgumentBuilder(ArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
+        BasicArgumentBuilder(BasicArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
 
         inline B* GetThis() { return static_cast<B*>(this); }
 
         inline std::shared_ptr<node_type> GetNode() const { return node; }
-        inline std::shared_ptr<CommandNode<S>> GetCommandNode() const { return std::static_pointer_cast<CommandNode<S>>(node); }
+        inline std::shared_ptr<BasicCommandNode<CharT, S>> GetCommandNode() const { return std::static_pointer_cast<BasicCommandNode<CharT, S>>(node); }
         inline operator std::shared_ptr<node_type>() const { return GetNode(); }
-        inline operator std::shared_ptr<CommandNode<S>>() const { return GetCommandNode(); }
+        inline operator std::shared_ptr<BasicCommandNode<CharT, S>>() const { return GetCommandNode(); }
 
         template<template<typename...> typename Next, typename Type = void, typename... Args>
         auto Then(Args&&... args)
@@ -32,14 +32,14 @@ namespace brigadier
             }
 
             if constexpr (std::is_same_v<Type, void>) {
-                using next_node = typename Next<S>::node_type;
+                using next_node = typename Next<CharT, S>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = node->children.find(name);
                 if (arg == node->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     node->AddChild(new_node);
-                    return Next<S>(std::move(new_node));
+                    return Next<CharT, S>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
@@ -48,7 +48,7 @@ namespace brigadier
                             throw std::runtime_error("Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
             else
@@ -78,10 +78,10 @@ namespace brigadier
         auto ThenOptional(Args&&... args)
         {
             auto opt = Then<Next, Type, Args...>(std::forward<Args>(args)...);
-            return MultiArgumentBuilder<S>({ opt.GetCommandNode(), GetCommandNode() }, 0);
+            return BasicMultiArgumentBuilder<CharT, S>({ opt.GetCommandNode(), GetCommandNode() }, 0);
         }
 
-        auto Then(std::shared_ptr<LiteralCommandNode<S>> argument)
+        auto Then(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> argument)
         {
             if (node->redirect != nullptr) {
                 throw std::runtime_error("Cannot add children to a redirected node");
@@ -93,7 +93,7 @@ namespace brigadier
         }
 
         template<typename T>
-        auto Then(std::shared_ptr<ArgumentCommandNode<S, T>> argument)
+        auto Then(std::shared_ptr<BasicArgumentCommandNode<CharT, S, T>> argument)
         {
             if (node->redirect != nullptr) {
                 throw std::runtime_error("Cannot add children to a redirected node");
@@ -104,7 +104,7 @@ namespace brigadier
             return GetBuilder(std::move(node->GetChild(argument)));
         }
 
-        B& Executes(Command<S> command)
+        B& Executes(BasicCommand<CharT, S> command)
         {
             node->command = command;
             return *GetThis();
@@ -116,29 +116,29 @@ namespace brigadier
             return *GetThis();
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target)
+        inline auto Redirect(std::shared_ptr<BasicCommandNode<CharT, S>> target)
         {
             return Forward(std::move(target), nullptr, false);
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier)
+        inline auto Redirect(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicSingleRedirectModifier<CharT, S> modifier)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](BasicCommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, false);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier)
+        inline auto Fork(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicSingleRedirectModifier<CharT, S> modifier)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](BasicCommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, true);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier)
+        inline auto Fork(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicRedirectModifier<CharT, S> modifier)
         {
             return Forward(std::move(target), modifier, true);
         }
 
-        void Forward(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier, bool fork)
+        void Forward(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicRedirectModifier<CharT, S> modifier, bool fork)
         {
             if (node->GetChildren().size() > 0)
             {
@@ -149,9 +149,10 @@ namespace brigadier
             node->forks = fork;
         }
     protected:
-        template<typename _S, typename _B>
-        friend class RequiredArgumentBuilder;
+        template<typename, typename, typename>
+        friend class BasicRequiredArgumentBuilder;
 
         std::shared_ptr<node_type> node;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ArgumentBuilder);
 }

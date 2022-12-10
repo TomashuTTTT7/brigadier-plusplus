@@ -9,63 +9,63 @@
 
 namespace brigadier
 {
-    template<typename S>
-    class CommandDispatcher;
-    template<typename S>
-    class LiteralCommandNode;
-    template<typename S>
-    class CommandNode;
-    template<typename S, typename T>
-    class ArgumentCommandNode;
+    template<typename CharT, typename S>
+    class BasicCommandDispatcher;
+    template<typename CharT, typename S>
+    class BasicLiteralCommandNode;
+    template<typename CharT, typename S>
+    class BasicCommandNode;
+    template<typename CharT, typename S, typename T>
+    class BasicArgumentCommandNode;
     namespace detail
     {
-        template<typename S>
-        class CommandContextInternal;
+        template<typename CharT, typename S>
+        class BasicCommandContextInternal;
     }
 
-    template<typename S>
-    class CommandContext
+    template<typename CharT, typename S>
+    class BasicCommandContext
     {
     public:
-        CommandContext(S source, CommandNode<S>* root, int start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<S>>(root, start)) {}
-        CommandContext(S source, CommandNode<S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<S>>(root, range)) {}
+        BasicCommandContext(S source, BasicCommandNode<CharT, S>* root, int start) : source(std::move(source)), context(std::make_unique<detail::BasicCommandContextInternal<CharT, S>>(root, start)) {}
+        BasicCommandContext(S source, BasicCommandNode<CharT, S>* root, BasicStringRange<CharT> range) : source(std::move(source)), context(std::make_unique<detail::BasicCommandContextInternal<CharT, S>>(root, range)) {}
 
-        inline CommandContext<S> GetFor(S source) const;
-        inline CommandContext<S>* GetChild() const;
-        inline CommandContext<S>* GetLastChild() const;
-        inline CommandContext<S>* GetParent() const;
-        inline CommandContext<S>* GetLastParent() const;
-        inline Command<S> GetCommand() const;
+        inline BasicCommandContext<CharT, S> GetFor(S source) const;
+        inline BasicCommandContext<CharT, S>* GetChild() const;
+        inline BasicCommandContext<CharT, S>* GetLastChild() const;
+        inline BasicCommandContext<CharT, S>* GetParent() const;
+        inline BasicCommandContext<CharT, S>* GetLastParent() const;
+        inline BasicCommand<CharT, S> GetCommand() const;
         inline S& GetSource();
         inline S const& GetSource() const;
-        inline RedirectModifier<S> GetRedirectModifier() const;
-        inline StringRange GetRange() const;
-        inline std::string_view GetInput() const;
-        inline CommandNode<S>* GetRootNode() const;
-        inline std::vector<ParsedCommandNode<S>>& GetNodes() const;
+        inline BasicRedirectModifier<CharT, S> GetRedirectModifier() const;
+        inline BasicStringRange<CharT> GetRange() const;
+        inline std::basic_string_view<CharT> GetInput() const;
+        inline BasicCommandNode<CharT, S>* GetRootNode() const;
+        inline std::vector<BasicParsedCommandNode<CharT, S>>& GetNodes() const;
     protected:
-        inline detail::CommandContextInternal<S>* GetInternalContext() const;
+        inline detail::BasicCommandContextInternal<CharT, S>* GetInternalContext() const;
     public:
         inline bool HasNodes() const;
         inline bool IsForked() const;
 
         template<typename ArgType>
-        typename ArgType::type GetArgument(std::string_view name);
+        typename ArgType::type GetArgument(std::basic_string_view<CharT> name);
         template<typename ArgType>
-        typename ArgType::type GetArgumentOr(std::string_view name, typename ArgType::type default_value);
+        typename ArgType::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value);
 
-        ~CommandContext();
+        ~BasicCommandContext();
     protected:
-        inline CommandContext<S>& WithInput(std::string_view input);
-        inline CommandContext<S>& WithSource(S source);
-        inline CommandContext<S>& WithArgument(std::string_view name, std::shared_ptr<IParsedArgument<S>> argument);
-        inline CommandContext<S>& WithCommand(Command<S> command);
-        inline CommandContext<S>& WithNode(CommandNode<S>* node, StringRange range);
-        inline CommandContext<S>& WithChildContext(CommandContext<S> childContext);
+        inline BasicCommandContext<CharT, S>& WithInput(std::basic_string_view<CharT> input);
+        inline BasicCommandContext<CharT, S>& WithSource(S source);
+        inline BasicCommandContext<CharT, S>& WithArgument(std::basic_string_view<CharT> name, std::shared_ptr<BasicIParsedArgument<CharT, S>> argument);
+        inline BasicCommandContext<CharT, S>& WithCommand(BasicCommand<CharT, S> command);
+        inline BasicCommandContext<CharT, S>& WithNode(BasicCommandNode<CharT, S>* node, BasicStringRange<CharT> range);
+        inline BasicCommandContext<CharT, S>& WithChildContext(BasicCommandContext<CharT, S> childContext);
 
         inline void Reset()
         {
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::BasicCommandContextInternal<CharT, S>& ctx = *context;
             input = {};
             ctx.arguments.clear();
             ctx.command = nullptr;
@@ -75,85 +75,87 @@ namespace brigadier
             ctx.modifier = nullptr;
             ctx.forks = false;
         }
-        inline void Reset(S src, CommandNode<S>* root)
+        inline void Reset(S src, BasicCommandNode<CharT, S>* root)
         {
             Reset();
             source = std::move(src);
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::BasicCommandContextInternal<CharT, S>& ctx = *context;
             ctx.rootNode = root;
         }
     public:
-        inline void Reset(S source, CommandNode<S>* root, int start)
+        inline void Reset(S source, BasicCommandNode<CharT, S>* root, int start)
         {
             Reset(source, root);
-            detail::CommandContextInternal<S>& ctx = *context;
-            ctx.range = StringRange::At(start);
+            detail::BasicCommandContextInternal<CharT, S>& ctx = *context;
+            ctx.range = BasicStringRange<CharT>::At(start);
         }
-        inline void Reset(S source, CommandNode<S>* root, StringRange range)
+        inline void Reset(S source, BasicCommandNode<CharT, S>* root, BasicStringRange<CharT> range)
         {
             Reset(source, root);
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::BasicCommandContextInternal<CharT, S>& ctx = *context;
             ctx.range = std::move(range);
         }
     protected:
-        SuggestionContext<S> FindSuggestionContext(int cursor);
+        BasicSuggestionContext<CharT, S> FindSuggestionContext(int cursor);
 
-        void Merge(CommandContext<S> other);
+        void Merge(BasicCommandContext<CharT, S> other);
     private:
-        friend class CommandDispatcher<S>;
-        friend class LiteralCommandNode<S>;
-        friend class CommandNode<S>;
-        template<typename _S, typename T>
-        friend class ArgumentCommandNode;
+        friend class BasicCommandDispatcher<CharT, S>;
+        friend class BasicLiteralCommandNode<CharT, S>;
+        friend class BasicCommandNode<CharT, S>;
+        template<typename, typename, typename>
+        friend class BasicArgumentCommandNode;
 
         S source;
-        std::string_view input = {};
-        std::shared_ptr<detail::CommandContextInternal<S>> context = nullptr;
+        std::basic_string_view<CharT> input = {};
+        std::shared_ptr<detail::BasicCommandContextInternal<CharT, S>> context = nullptr;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContext);
 
     namespace detail
     {
-        template<typename S>
-        class CommandContextInternal
+        template<typename CharT, typename S>
+        class BasicCommandContextInternal
         {
         public:
-            CommandContextInternal(CommandNode<S>* root, int start) : rootNode(root), range(StringRange::At(start)) {}
-            CommandContextInternal(CommandNode<S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
+            BasicCommandContextInternal(BasicCommandNode<CharT, S>* root, int start) : rootNode(root), range(BasicStringRange<CharT>::At(start)) {}
+            BasicCommandContextInternal(BasicCommandNode<CharT, S>* root, BasicStringRange<CharT> range) : rootNode(root), range(std::move(range)) {}
         protected:
-            friend class CommandContext<S>;
+            friend class BasicCommandContext<CharT, S>;
 
-            std::map<std::string, std::shared_ptr<IParsedArgument<S>>, std::less<>> arguments;
-            Command<S> command = nullptr;
-            CommandNode<S>* rootNode = nullptr;
-            std::vector<ParsedCommandNode<S>> nodes;
-            StringRange range;
-            CommandContext<S>* parent = nullptr;
-            std::optional<CommandContext<S>> child = {};
-            RedirectModifier<S> modifier = nullptr;
+            std::map<std::basic_string<CharT>, std::shared_ptr<BasicIParsedArgument<CharT, S>>, std::less<>> arguments;
+            BasicCommand<CharT, S> command = nullptr;
+            BasicCommandNode<CharT, S>* rootNode = nullptr;
+            std::vector<BasicParsedCommandNode<CharT, S>> nodes;
+            BasicStringRange<CharT> range;
+            BasicCommandContext<CharT, S>* parent = nullptr;
+            std::optional<BasicCommandContext<CharT, S>> child = {};
+            BasicRedirectModifier<CharT, S> modifier = nullptr;
             bool forks = false;
         };
+        BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContextInternal);
     }
 
-    template<typename S>
+    template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<S>::GetArgument(std::string_view name)
+    typename ArgType::type BasicCommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name)
     {
         auto argument = context->arguments.find(name);
 
         if (argument == context->arguments.end()) {
-            throw std::runtime_error("No such argument '" + std::string(name) + "' exists on this command");
+            throw std::runtime_error("No such argument '" + std::basic_string<CharT>(name) + "' exists on this command");
         }
         auto& parsed = argument->second;
         if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType>())) {
-            throw std::runtime_error("Argument '" + std::string(name) + "' has been acquired using wrong type");
+            throw std::runtime_error("Argument '" + std::basic_string<CharT>(name) + "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<S, ArgType>*)parsed.get())->GetResult();
+        return ((BasicParsedArgument<S, ArgType>*)parsed.get())->GetResult();
     }
 
-    template<typename S>
+    template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<S>::GetArgumentOr(std::string_view name, typename ArgType::type default_value)
+    typename ArgType::type BasicCommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value)
     {
         auto argument = context->arguments.find(name);
 
@@ -162,124 +164,124 @@ namespace brigadier
         }
         auto& parsed = argument->second;
         if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType>())) {
-            throw std::runtime_error("Argument '" + std::string(name) + "' has been acquired using wrong type");
+            throw std::runtime_error("Argument '" + std::basic_string<CharT>(name) + "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<S, ArgType>*)parsed.get())->GetResult();
+        return ((BasicParsedArgument<S, ArgType>*)parsed.get())->GetResult();
     }
 
-    template<typename S>
-    inline CommandContext<S> CommandContext<S>::GetFor(S source) const
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S> BasicCommandContext<CharT, S>::GetFor(S source) const
     {
-        CommandContext<S> result = *this;
+        BasicCommandContext<CharT, S> result = *this;
         result.source = std::move(source);
         result.input = input;
         return result;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetChild() const
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>* BasicCommandContext<CharT, S>::GetChild() const
     {
         if (context->child.has_value())
             return &context->child.value();
         else return nullptr;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetParent() const
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>* BasicCommandContext<CharT, S>::GetParent() const
     {
         return context->parent;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetLastParent() const
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>* BasicCommandContext<CharT, S>::GetLastParent() const
     {
-        CommandContext<S>* result = this;
+        BasicCommandContext<CharT, S>* result = this;
         while (result->GetParent() != nullptr) {
             result = result->GetParent();
         }
         return result;
     }
 
-    template<typename S>
-    inline detail::CommandContextInternal<S>* CommandContext<S>::GetInternalContext() const
+    template<typename CharT, typename S>
+    inline detail::BasicCommandContextInternal<CharT, S>* BasicCommandContext<CharT, S>::GetInternalContext() const
     {
         return context.get();
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetLastChild() const
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>* BasicCommandContext<CharT, S>::GetLastChild() const
     {
-        CommandContext<S>* result = this;
+        BasicCommandContext<CharT, S>* result = this;
         while (result->GetChild() != nullptr) {
             result = result->GetChild();
         }
         return result;
     }
 
-    template<typename S>
-    inline Command<S> CommandContext<S>::GetCommand() const
+    template<typename CharT, typename S>
+    inline BasicCommand<CharT, S> BasicCommandContext<CharT, S>::GetCommand() const
     {
         return context->command;
     }
 
 
-    template<typename S>
-    inline S& CommandContext<S>::GetSource()
+    template<typename CharT, typename S>
+    inline S& BasicCommandContext<CharT, S>::GetSource()
     {
         return source;
     }
 
-    template<typename S>
-    inline S const& CommandContext<S>::GetSource() const
+    template<typename CharT, typename S>
+    inline S const& BasicCommandContext<CharT, S>::GetSource() const
     {
         return source;
     }
 
-    template<typename S>
-    inline RedirectModifier<S> CommandContext<S>::GetRedirectModifier() const
+    template<typename CharT, typename S>
+    inline BasicRedirectModifier<CharT, S> BasicCommandContext<CharT, S>::GetRedirectModifier() const
     {
         return context->modifier;
     }
 
-    template<typename S>
-    inline StringRange CommandContext<S>::GetRange() const
+    template<typename CharT, typename S>
+    inline BasicStringRange<CharT> BasicCommandContext<CharT, S>::GetRange() const
     {
         return context->range;
     }
 
-    template<typename S>
-    inline std::string_view CommandContext<S>::GetInput() const
+    template<typename CharT, typename S>
+    inline std::basic_string_view<CharT> BasicCommandContext<CharT, S>::GetInput() const
     {
         return context->input;
     }
 
-    template<typename S>
-    inline CommandNode<S>* CommandContext<S>::GetRootNode() const
+    template<typename CharT, typename S>
+    inline BasicCommandNode<CharT, S>* BasicCommandContext<CharT, S>::GetRootNode() const
     {
         return context->rootNode;
     }
 
-    template<typename S>
-    inline std::vector<ParsedCommandNode<S>>& CommandContext<S>::GetNodes() const
+    template<typename CharT, typename S>
+    inline std::vector<BasicParsedCommandNode<CharT, S>>& BasicCommandContext<CharT, S>::GetNodes() const
     {
         return context->nodes;
     }
 
-    template<typename S>
-    inline bool CommandContext<S>::HasNodes() const
+    template<typename CharT, typename S>
+    inline bool BasicCommandContext<CharT, S>::HasNodes() const
     {
         return context->nodes.size() > 0;
     }
 
-    template<typename S>
-    inline bool CommandContext<S>::IsForked() const
+    template<typename CharT, typename S>
+    inline bool BasicCommandContext<CharT, S>::IsForked() const
     {
         return context->forks;
     }
 
-    template<typename S>
-    inline CommandContext<S>::~CommandContext()
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>::~BasicCommandContext()
     {
         if (context)
         {
@@ -290,57 +292,57 @@ namespace brigadier
         }
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithInput(std::string_view input)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithInput(std::basic_string_view<CharT> input)
     {
         this->input = std::move(input);
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithSource(S source)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithSource(S source)
     {
         context->source = std::move(source);
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithArgument(std::string_view name, std::shared_ptr<IParsedArgument<S>> argument)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithArgument(std::basic_string_view<CharT> name, std::shared_ptr<BasicIParsedArgument<CharT, S>> argument)
     {
         context->arguments.emplace(name, std::move(argument));
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithCommand(Command<S> command)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithCommand(BasicCommand<CharT, S> command)
     {
         context->command = command;
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithNode(CommandNode<S>* node, StringRange range)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithNode(BasicCommandNode<CharT, S>* node, BasicStringRange<CharT> range)
     {
         if (node)
         {
             context->nodes.emplace_back(node, range);
-            context->range = StringRange::Encompassing(context->range, range);
+            context->range = BasicStringRange<CharT>::Encompassing(context->range, range);
             context->modifier = node->GetRedirectModifier();
             context->forks = node->IsFork();
         }
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithChildContext(CommandContext<S> childContext)
+    template<typename CharT, typename S>
+    inline BasicCommandContext<CharT, S>& BasicCommandContext<CharT, S>::WithChildContext(BasicCommandContext<CharT, S> childContext)
     {
         context->child = childContext;
         context->child->context->parent = this;
         return *this;
     }
 
-    template<typename S>
-    SuggestionContext<S> CommandContext<S>::FindSuggestionContext(int cursor)
+    template<typename CharT, typename S>
+    BasicSuggestionContext<CharT, S> BasicCommandContext<CharT, S>::FindSuggestionContext(int cursor)
     {
         auto& ctx = context;
         if (ctx->range.GetStart() <= cursor) {
@@ -350,10 +352,10 @@ namespace brigadier
                 }
                 else if (HasNodes()) {
                     auto& last = ctx->nodes.back();
-                    return SuggestionContext<S>(last.GetNode(), last.GetRange().GetEnd() + 1);
+                    return BasicSuggestionContext<CharT, S>(last.GetNode(), last.GetRange().GetEnd() + 1);
                 }
                 else {
-                    return SuggestionContext<S>(ctx->rootNode, ctx->range.GetStart());
+                    return BasicSuggestionContext<CharT, S>(ctx->rootNode, ctx->range.GetStart());
                 }
             }
             else {
@@ -361,23 +363,23 @@ namespace brigadier
                 for (auto& node : ctx->nodes) {
                     auto nodeRange = node.GetRange();
                     if (nodeRange.GetStart() <= cursor && cursor <= nodeRange.GetEnd()) {
-                        return SuggestionContext<S>(prev, nodeRange.GetStart());
+                        return BasicSuggestionContext<CharT, S>(prev, nodeRange.GetStart());
                     }
                     prev = node.GetNode();
                 }
                 if (prev == nullptr) {
                     throw std::runtime_error("Can't find node before cursor");
                 }
-                return SuggestionContext<S>(prev, ctx->range.GetStart());
+                return BasicSuggestionContext<CharT, S>(prev, ctx->range.GetStart());
             }
         }
         throw std::runtime_error("Can't find node before cursor");
     }
 
-    template<typename S>
-    void CommandContext<S>::Merge(CommandContext<S> other)
+    template<typename CharT, typename S>
+    void BasicCommandContext<CharT, S>::Merge(BasicCommandContext<CharT, S> other)
     {
-        detail::CommandContextInternal<S>* ctx = other.GetInternalContext();
+        detail::BasicCommandContextInternal<CharT, S>* ctx = other.GetInternalContext();
         for (auto& arg : ctx->arguments)
             context->arguments.emplace(std::move(arg));
         context->command = std::move(ctx->command);
@@ -385,7 +387,7 @@ namespace brigadier
         context->nodes.reserve(context->nodes.size() + ctx->nodes.size());
         for (auto& node : ctx->nodes)
         {
-            context->range = StringRange::Encompassing(context->range, ctx->range);
+            context->range = BasicStringRange<CharT>::Encompassing(context->range, ctx->range);
             context->modifier = node.GetNode()->GetRedirectModifier();
             context->forks = node.GetNode()->IsFork();
 
