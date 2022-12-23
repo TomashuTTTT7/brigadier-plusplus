@@ -18,6 +18,56 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test\brigadier_header_only_test.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentRegister.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentType.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Builder\ArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Builder\LiteralArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Builder\MultiArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Builder\RequiredArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\brigadier\CommandDispatcher.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Common.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Context\CommandContext.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Context\ParsedArgument.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Context\ParsedCommandNode.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Context\StringRange.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Context\SuggestionContext.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Exceptions\Exceptions.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Functional.hpp" />
+    <ClInclude Include="include\header-only\brigadier\ParseResults.hpp" />
+    <ClInclude Include="include\header-only\brigadier\StringReader.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Suggestion\Suggestion.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Suggestion\Suggestions.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Suggestion\SuggestionsBuilder.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Tree\ArgumentCommandNode.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Tree\CommandNode.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Tree\LiteralCommandNode.hpp" />
+    <ClInclude Include="include\header-only\brigadier\Tree\RootCommandNode.hpp" />
+    <ClInclude Include="test\brigadier\Arguments\ArgumentType.hpp" />
+    <ClInclude Include="test\brigadier\Builder\ArgumentBuilder.hpp" />
+    <ClInclude Include="test\brigadier\Builder\LiteralArgumentBuilder.hpp" />
+    <ClInclude Include="test\brigadier\Builder\MultiArgumentBuilder.hpp" />
+    <ClInclude Include="test\brigadier\Builder\RequiredArgumentBuilder.hpp" />
+    <ClInclude Include="test\brigadier\CommandDispatcher.hpp" />
+    <ClInclude Include="test\brigadier\Context\CommandContext.hpp" />
+    <ClInclude Include="test\brigadier\Context\ParsedArgument.hpp" />
+    <ClInclude Include="test\brigadier\Context\ParsedCommandNode.hpp" />
+    <ClInclude Include="test\brigadier\Context\StringRange.hpp" />
+    <ClInclude Include="test\brigadier\Context\SuggestionContext.hpp" />
+    <ClInclude Include="test\brigadier\StringReader.hpp" />
+    <ClInclude Include="test\brigadier\Suggestion\Suggestion.hpp" />
+    <ClInclude Include="test\brigadier\Suggestion\Suggestions.hpp" />
+    <ClInclude Include="test\brigadier\Suggestion\SuggestionsBuilder.hpp" />
+    <ClInclude Include="test\brigadier\Tree\ArgumentCommandNode.hpp" />
+    <ClInclude Include="test\brigadier\Tree\CommandNode.hpp" />
+    <ClInclude Include="test\brigadier\Tree\LiteralCommandNode.hpp" />
+    <ClInclude Include="test\brigadier\Tree\RootCommandNode.hpp" />
+    <ClInclude Include="test\CommonTest.hpp" />
+    <ClInclude Include="test\TestAll.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{AD3B51DF-77DC-482F-B746-C153C6A684A3}</ProjectGuid>
@@ -77,15 +127,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\tmp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\tmp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\tmp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\tmp\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -155,32 +213,6 @@
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="brigadier_header_only_test.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="brigadier\Arguments\ArgumentType.hpp" />
-    <ClInclude Include="brigadier\Builder\ArgumentBuilder.hpp" />
-    <ClInclude Include="brigadier\Builder\LiteralArgumentBuilder.hpp" />
-    <ClInclude Include="brigadier\Builder\MultiArgumentBuilder.hpp" />
-    <ClInclude Include="brigadier\Builder\RequiredArgumentBuilder.hpp" />
-    <ClInclude Include="brigadier\CommandDispatcher.hpp" />
-    <ClInclude Include="brigadier\Context\CommandContext.hpp" />
-    <ClInclude Include="brigadier\Context\ParsedArgument.hpp" />
-    <ClInclude Include="brigadier\Context\ParsedCommandNode.hpp" />
-    <ClInclude Include="brigadier\Context\StringRange.hpp" />
-    <ClInclude Include="brigadier\Context\SuggestionContext.hpp" />
-    <ClInclude Include="brigadier\StringReader.hpp" />
-    <ClInclude Include="brigadier\Suggestion\Suggestion.hpp" />
-    <ClInclude Include="brigadier\Suggestion\Suggestions.hpp" />
-    <ClInclude Include="brigadier\Suggestion\SuggestionsBuilder.hpp" />
-    <ClInclude Include="brigadier\Tree\ArgumentCommandNode.hpp" />
-    <ClInclude Include="brigadier\Tree\CommandNode.hpp" />
-    <ClInclude Include="brigadier\Tree\LiteralCommandNode.hpp" />
-    <ClInclude Include="brigadier\Tree\RootCommandNode.hpp" />
-    <ClInclude Include="CommonTest.hpp" />
-    <ClInclude Include="TestAll.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
