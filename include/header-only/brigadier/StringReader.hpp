@@ -13,7 +13,7 @@ namespace brigadier
     {
         using base = std::basic_streambuf<CharT, traits>;
     protected:
-        base::pos_type seekoff(base::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
+        typename base::pos_type seekoff(typename base::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
         {
             if (dir == std::ios_base::cur)
                 this->gbump((int)off);
@@ -24,8 +24,8 @@ namespace brigadier
             return this->gptr() - this->eback();
         }
 
-        base::pos_type seekpos(base::pos_type sp, std::ios_base::openmode which) override {
-            return seekoff(sp - base::pos_type(base::off_type(0)), std::ios_base::beg, which);
+        typename base::pos_type seekpos(typename base::pos_type sp, std::ios_base::openmode which) override {
+            return seekoff(sp - typename base::pos_type(typename base::off_type(0)), std::ios_base::beg, which);
         }
     public:
         basic_stringviewbuf(CharT const* s, size_t count) {
@@ -104,7 +104,7 @@ namespace brigadier
         }
         template<bool allow_float = true, bool allow_negative = true>
         inline static bool IsAllowedNumber(CharT c) {
-            return c >= CharT('0') && c <= CharT('9') || (allow_float && c == CharT('.')) || (allow_negative && c == CharT('-'));
+            return (c >= CharT('0') && c <= CharT('9')) || (allow_float && c == CharT('.')) || (allow_negative && c == CharT('-'));
         }
     private:
         std::basic_string_view<CharT> string;

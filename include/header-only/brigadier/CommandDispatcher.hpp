@@ -159,8 +159,7 @@ namespace brigadier
         */
         int Execute(std::basic_string_view<CharT> input, S source)
         {
-            StringReader<CharT> reader = StringReader<CharT>(input);
-            return Execute(reader, std::move(source));
+            return Execute(StringReader<CharT>(input), std::move(source));
         }
 
         /**
@@ -193,10 +192,9 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        int Execute(StringReader<CharT>& input, S source)
+        int Execute(StringReader<CharT> input, S source)
         {
-            auto parse = Parse(input, std::move(source));
-            return Execute(parse);
+            return Execute(Parse(std::move(input), std::move(source)));
         }
 
         /**
@@ -225,7 +223,7 @@ namespace brigadier
         \see Execute(String, Object)
         \see Execute(StringReader, Object)
         */
-        int Execute(ParseResults<CharT, S>& parse)
+        int Execute(ParseResults<CharT, S> const& parse)
         {
             if (parse.GetReader().CanRead()) {
                 if (parse.GetExceptions().size() == 1) {
@@ -364,9 +362,9 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<CharT, S> Parse(StringReader<CharT>& command, S source)
+        ParseResults<CharT, S> Parse(StringReader<CharT> command, S source)
         {
-            ParseResults<CharT, S> result(CommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), command);
+            ParseResults<CharT, S> result(CommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), std::move(command));
             ParseNodes(root.get(), result);
             return result;
         }
@@ -671,7 +669,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -693,9 +691,9 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, size_t cursor, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, size_t cursor, bool* cancel) {
+            return std::async(std::launch::async, [](ParseResults<CharT, S> const* parse, size_t cursor, bool* cancel) {
                 auto context = parse->GetContext();
 
                 SuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);

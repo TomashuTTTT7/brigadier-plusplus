@@ -30,7 +30,7 @@ namespace brigadier
     public:
         T Parse(StringReader<CharT>& reader)
         {
-            return reader.ReadValue<T>();
+            return reader.template ReadValue<T>();
         }
 
         template<typename S>
@@ -229,7 +229,7 @@ namespace brigadier
         T Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
-            T result = reader.ReadValue<T>();
+            T result = reader.template ReadValue<T>();
             if (result < minimum) {
                 reader.SetCursor(start);
                 throw exceptions::ValueTooLow(reader, result, minimum);
@@ -252,7 +252,7 @@ namespace brigadier
                 else
                     return BRIGADIER_LITERAL(CharT, "uint");
             }
-            else return ArgumentType<T>::GetTypeName();
+            else return ArgumentType<CharT, T>::GetTypeName();
         }
 
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
