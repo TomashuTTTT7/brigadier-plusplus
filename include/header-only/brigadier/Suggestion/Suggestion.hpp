@@ -6,16 +6,16 @@
 namespace brigadier
 {
     template<typename CharT>
-    class BasicSuggestions;
+    class Suggestions;
     template<typename CharT>
-    class BasicSuggestionsBuilder;
+    class SuggestionsBuilder;
 
     template<typename CharT>
-    class BasicSuggestion
+    class Suggestion
     {
     public:
-        BasicSuggestion(StringRange range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        BasicSuggestion(StringRange range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
+        Suggestion(StringRange range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        Suggestion(StringRange range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
 
         inline StringRange GetRange() const { return range; }
         inline std::basic_string<CharT> const& GetText() const { return text; }
@@ -53,10 +53,10 @@ namespace brigadier
             this->range = range;
         }
     protected:
-        friend class BasicSuggestions<CharT>;
-        friend class BasicSuggestionsBuilder<CharT>;
-        BasicSuggestion<CharT>(std::basic_string<CharT> text, StringRange range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        BasicSuggestion<CharT>(std::basic_string<CharT> text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
+        friend class Suggestions<CharT>;
+        friend class SuggestionsBuilder<CharT>;
+        Suggestion<CharT>(std::basic_string<CharT> text, StringRange range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        Suggestion<CharT>(std::basic_string<CharT> text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
     private:
         StringRange range;
         std::basic_string<CharT> text;
@@ -66,7 +66,7 @@ namespace brigadier
 
     template<typename CharT>
     struct CompareNoCase {
-        inline bool operator() (BasicSuggestion<CharT> const& a, BasicSuggestion<CharT> const& b) const
+        inline bool operator() (Suggestion<CharT> const& a, Suggestion<CharT> const& b) const
         {
             CharT const* s1 = a.GetText().data();
             CharT const* s2 = b.GetText().data();

@@ -3,7 +3,7 @@
 #include "../Common.hpp"
 
 // Following code makes that you don't have to specify command source type inside arguments.
-// BasicCommand source type is automatically distributed from dispatcher.
+// Command source type is automatically distributed from dispatcher.
 
 // Default registration for arguments with or without template, without specialization
 #define BRIGADIER_REGISTER_ARGTYPE(type, name)                            \

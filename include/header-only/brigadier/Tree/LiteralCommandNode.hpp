@@ -5,27 +5,27 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class BasicLiteralCommandNode : public BasicCommandNode<CharT, S>
+    class LiteralCommandNode : public CommandNode<CharT, S>
     {
     public:
-        BasicLiteralCommandNode(std::basic_string_view<CharT> literal, std::shared_ptr<BasicCommand<CharT, S>> command, Predicate<S&> requirement, std::shared_ptr<BasicCommandNode<CharT, S>> redirect, BasicRedirectModifier<CharT, S> modifier, const bool forks)
-            : BasicCommandNode<CharT, S>(command, requirement, redirect, modifier, forks)
+        LiteralCommandNode(std::basic_string_view<CharT> literal, std::shared_ptr<Command<CharT, S>> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<CharT, S>> redirect, RedirectModifier<CharT, S> modifier, const bool forks)
+            : CommandNode<CharT, S>(command, requirement, redirect, modifier, forks)
             , literal(literal)
             , literalLowerCase(literal)
         {
             std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
-        BasicLiteralCommandNode(std::basic_string_view<CharT> literal)
+        LiteralCommandNode(std::basic_string_view<CharT> literal)
             : literal(literal)
             , literalLowerCase(literal)
         {
             std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
-        virtual ~BasicLiteralCommandNode() = default;
+        virtual ~LiteralCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { return literal; }
         virtual std::basic_string<CharT> GetUsageText() { return literal; }
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return { literal }; }
-        virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder)
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder)
         {
             size_t start = reader.GetCursor();
             size_t end = Parse(reader);
@@ -36,22 +36,22 @@ namespace brigadier
 
             throw exceptions::LiteralIncorrect(reader, literal);
         }
-        virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             if (builder.AutoSuggest(literalLowerCase, builder.GetRemainingLowerCase()))
                 return builder.BuildFuture();
             else
-                return BasicSuggestions<CharT>::Empty();
+                return Suggestions<CharT>::Empty();
         }
-        virtual CommandNodeType GetNodeType() { return CommandNodeType::BasicLiteralCommandNode; }
+        virtual CommandNodeType GetNodeType() { return CommandNodeType::LiteralCommandNode; }
     protected:
         virtual bool IsValidInput(std::basic_string_view<CharT> input) {
-            BasicStringReader<CharT> reader(input);
+            StringReader<CharT> reader(input);
             return Parse(reader) != size_t(-1);
         }
         virtual std::basic_string_view<CharT> GetSortedKey() { return literal; }
     private:
-        size_t Parse(BasicStringReader<CharT>& reader)
+        size_t Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
             if (reader.CanRead(literal.length())) {

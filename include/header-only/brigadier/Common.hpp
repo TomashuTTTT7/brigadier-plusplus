@@ -76,13 +76,13 @@ namespace brigadier::detail
 #define BRIGADIER_LITERAL(type, s_literal) brigadier::detail::literal_type(type(), s_literal, L##s_literal, u##s_literal, U##s_literal)
 
 #define BRIGADIER_SPECIALIZE_BASIC(type) \
-using    type = Basic##type<char>;       \
-using W##type = Basic##type<wchar_t>;
+using type##A = type<char>;              \
+using type##W = type<wchar_t>;
 
-#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)                      \
-template<typename... Ts> using    type = Basic##type<char, Ts...>;  \
-template<typename... Ts> using W##type = Basic##type<wchar_t, Ts...>;
+#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)               \
+template<typename... Ts> using type##A = type<char, Ts...>;  \
+template<typename... Ts> using type##W = type<wchar_t, Ts...>;
 
 #define BRIGADIER_SPECIALIZE_BASIC_ALIAS(type, tepl_list, templ_spec) \
-template<tepl_list> using    type = Basic##type<char, templ_spec>;    \
-template<tepl_list> using W##type = Basic##type<wchar_t, templ_spec>;
+template<tepl_list> using type##A = type<char, templ_spec>;           \
+template<tepl_list> using type##W = type<wchar_t, templ_spec>;

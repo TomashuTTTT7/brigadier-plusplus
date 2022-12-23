@@ -49,15 +49,15 @@ namespace brigadier
 
 
     template<typename CharT>
-    class BasicStringReader
+    class StringReader
     {
     private:
         static constexpr CharT SYNTAX_ESCAPE       = CharT('\\');
         static constexpr CharT SYNTAX_SINGLE_QUOTE = CharT('\'');
         static constexpr CharT SYNTAX_DOUBLE_QUOTE = CharT('\"');
     public:
-        BasicStringReader(std::basic_string_view<CharT> string) : string(string) {}
-        BasicStringReader() {}
+        StringReader(std::basic_string_view<CharT> string) : string(string) {}
+        StringReader() {}
 
         inline std::basic_string_view<CharT> GetString()                const { return string; }
         inline void                          SetCursor(size_t cursor)         { this->cursor = cursor; }
@@ -118,7 +118,7 @@ namespace brigadier
 namespace brigadier
 {
     template<typename CharT>
-    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedString()
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedString()
     {
         size_t start = cursor;
         while (CanRead() && IsAllowedInUnquotedString(Peek())) {
@@ -128,7 +128,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedStringUntil(CharT terminator)
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedStringUntil(CharT terminator)
     {
         size_t start = cursor;
         while (CanRead()) {
@@ -143,7 +143,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedStringUntilOneOf(CharT const* terminators)
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedStringUntilOneOf(CharT const* terminators)
     {
         size_t start = cursor;
         while (CanRead()) {
@@ -161,7 +161,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string<CharT> BasicStringReader<CharT>::ReadString()
+    std::basic_string<CharT> StringReader<CharT>::ReadString()
     {
         if (!CanRead()) {
             return {};
@@ -175,7 +175,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string<CharT> BasicStringReader<CharT>::ReadStringUntil(CharT terminator)
+    std::basic_string<CharT> StringReader<CharT>::ReadStringUntil(CharT terminator)
     {
         std::basic_string<CharT> result;
         result.reserve(GetRemainingLength());
@@ -213,7 +213,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string<CharT> BasicStringReader<CharT>::ReadStringUntilOneOf(CharT const* terminators)
+    std::basic_string<CharT> StringReader<CharT>::ReadStringUntilOneOf(CharT const* terminators)
     {
         std::basic_string<CharT> result;
         result.reserve(GetRemainingLength());
@@ -255,7 +255,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    std::basic_string<CharT> BasicStringReader<CharT>::ReadQuotedString()
+    std::basic_string<CharT> StringReader<CharT>::ReadQuotedString()
     {
         if (!CanRead()) {
             return {};
@@ -269,7 +269,7 @@ namespace brigadier
     }
 
     template<typename CharT>
-    void BasicStringReader<CharT>::Expect(CharT c)
+    void StringReader<CharT>::Expect(CharT c)
     {
         if (!CanRead() || Peek() != c) {
             throw exceptions::ReaderExpectedSymbol(*this, c);
@@ -279,7 +279,7 @@ namespace brigadier
 
     template<typename CharT>
     template<typename T>
-    T BasicStringReader<CharT>::ParseValue(std::basic_string_view<CharT> value, size_t start)
+    T StringReader<CharT>::ParseValue(std::basic_string_view<CharT> value, size_t start)
     {
         if (value.empty()) {
             throw exceptions::ReaderExpectedValue(*this);
@@ -314,7 +314,7 @@ namespace brigadier
 
     template<typename CharT>
     template<typename T>
-    T BasicStringReader<CharT>::ReadValue()
+    T StringReader<CharT>::ReadValue()
     {
         if (!CanRead()) {
             throw exceptions::ReaderExpectedValue(*this);

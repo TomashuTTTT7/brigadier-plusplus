@@ -5,19 +5,19 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class BasicRootCommandNode : public BasicCommandNode<CharT, S>
+    class RootCommandNode : public CommandNode<CharT, S>
     {
     public:
-        BasicRootCommandNode() : BasicCommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
+        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
 
-        virtual ~BasicRootCommandNode() = default;
+        virtual ~RootCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }
         virtual std::basic_string<CharT> GetUsageText() { return {}; }
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return {}; }
-        virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder) {}
-        virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {}
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
-            return BasicSuggestions<CharT>::Empty();
+            return Suggestions<CharT>::Empty();
         }
         virtual CommandNodeType GetNodeType() { return CommandNodeType::RootCommandNode; }
     protected:

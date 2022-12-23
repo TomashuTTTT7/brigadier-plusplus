@@ -8,13 +8,13 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class BasicMultiArgumentBuilder
+    class MultiArgumentBuilder
     {
     public:
-        using B = BasicMultiArgumentBuilder<CharT, S>;
+        using B = MultiArgumentBuilder<CharT, S>;
     public:
-        BasicMultiArgumentBuilder(std::vector<std::shared_ptr<BasicCommandNode<CharT, S>>> nodes, int master = -1) : nodes(std::move(nodes)), master(master) {}
-        BasicMultiArgumentBuilder(BasicMultiArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
+        MultiArgumentBuilder(std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes, int master = -1) : nodes(std::move(nodes)), master(master) {}
+        MultiArgumentBuilder(MultiArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
 
         inline B* GetThis() { return this; }
 
@@ -27,7 +27,7 @@ namespace brigadier
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
 
@@ -51,11 +51,11 @@ namespace brigadier
             }
         }
 
-        auto Then(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> argument)
+        auto Then(std::shared_ptr<LiteralCommandNode<CharT, S>> argument)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -67,11 +67,11 @@ namespace brigadier
         }
 
         template<typename T>
-        auto Then(std::shared_ptr<BasicArgumentCommandNode<CharT, S, T>> argument)
+        auto Then(std::shared_ptr<ArgumentCommandNode<CharT, S, T>> argument)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -82,7 +82,7 @@ namespace brigadier
             return GetBuilder(std::move(argument));
         }
 
-        B& Executes(BasicCommand<CharT, S> command, bool only_master = true)
+        B& Executes(Command<CharT, S> command, bool only_master = true)
         {
             for (size_t i = 0; i < nodes.size(); ++i) {
                 if (master == -1 || master == i || !only_master) {
@@ -104,36 +104,36 @@ namespace brigadier
             return *GetThis();
         }
 
-        inline auto Redirect(std::shared_ptr<BasicCommandNode<CharT, S>> target, bool only_master = true)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target, bool only_master = true)
         {
             return Forward(std::move(target), nullptr, false, only_master);
         }
 
-        inline auto Redirect(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicSingleRedirectModifier<CharT, S> modifier, bool only_master = true)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier, bool only_master = true)
         {
-            return Forward(std::move(target), modifier ? [modifier](BasicCommandContext<CharT, S>& context) -> std::vector<CharT, S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, false, only_master);
         }
 
-        inline auto Fork(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicSingleRedirectModifier<CharT, S> modifier, bool only_master = true)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier, bool only_master = true)
         {
-            return Forward(std::move(target), modifier ? [modifier](BasicCommandContext<CharT, S>& context) -> std::vector<CharT, S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, true, only_master);
         }
 
-        inline auto Fork(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicRedirectModifier<CharT, S> modifier, bool only_master = true)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier, bool only_master = true)
         {
             return Forward(std::move(target), modifier, true, only_master);
         }
 
-        void Forward(std::shared_ptr<BasicCommandNode<CharT, S>> target, BasicRedirectModifier<CharT, S> modifier, bool fork, bool only_master = true)
+        void Forward(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier, bool fork, bool only_master = true)
         {
             for (size_t i = 0; i < nodes.size(); ++i) {
                 if (master == -1 || master == i || !only_master) {
                     auto& node = nodes[i];
                     if (node->GetChildren().size() > 0)
                     {
-                        throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot forward a node with children");
+                        throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot forward a node with children");
                     }
                 }
             }
@@ -147,15 +147,15 @@ namespace brigadier
             }
         }
     protected:
-        std::vector<std::shared_ptr<BasicCommandNode<CharT, S>>> nodes;
+        std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes;
         int master = -1;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(MultiArgumentBuilder);
 
     // multi builder
     template<typename CharT, typename S>
-    inline BasicMultiArgumentBuilder<CharT, S> GetBuilder(std::vector<std::shared_ptr<BasicCommandNode<CharT, S>>> nodes, int master = -1)
+    inline MultiArgumentBuilder<CharT, S> GetBuilder(std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes, int master = -1)
     {
-        return BasicMultiArgumentBuilder<CharT, S>(std::move(nodes), master);
+        return MultiArgumentBuilder<CharT, S>(std::move(nodes), master);
     }
 }

@@ -15,11 +15,11 @@ namespace brigadier
     };
 
     template<typename CharT, typename S>
-    class BasicIParsedArgument
+    class IParsedArgument
     {
     public:
-        BasicIParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
-        virtual ~BasicIParsedArgument() = default;
+        IParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
+        virtual ~IParsedArgument() = default;
 
         inline StringRange GetRange()    const { return range; }
         inline TypeInfo                GetTypeInfo() const { return typeInfo; }
@@ -30,13 +30,13 @@ namespace brigadier
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(IParsedArgument);
 
     template<typename CharT, typename S, typename ArgType>
-    class BasicParsedArgument : public BasicIParsedArgument<CharT, S>
+    class ParsedArgument : public IParsedArgument<CharT, S>
     {
     public:
         using T = typename ArgType::type;
 
-        BasicParsedArgument(size_t start, size_t end, T result) : BasicIParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
-        virtual ~BasicParsedArgument() = default;
+        ParsedArgument(size_t start, size_t end, T result) : IParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
+        virtual ~ParsedArgument() = default;
 
         inline T&       GetResult()       { return result; }
         inline T const& GetResult() const { return result; }

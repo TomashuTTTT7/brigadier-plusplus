@@ -12,60 +12,60 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class BasicCommandNode;
+    class CommandNode;
     template<typename CharT, typename S>
-    class BasicIArgumentCommandNode;
+    class IArgumentCommandNode;
     template<typename CharT, typename S>
-    class BasicLiteralCommandNode;
+    class LiteralCommandNode;
     template<typename CharT, typename S>
-    class BasicRootCommandNode;
+    class RootCommandNode;
     template<typename CharT, typename S>
-    class BasicCommandDispatcher;
+    class CommandDispatcher;
 
     template<typename CharT, typename S, typename T, typename node_type>
-    class BasicArgumentBuilder;
+    class ArgumentBuilder;
     template<typename CharT, typename S>
-    class BasicMultiArgumentBuilder;
+    class MultiArgumentBuilder;
     template<typename CharT, typename S>
-    class BasicLiteralArgumentBuilder;
+    class LiteralArgumentBuilder;
     template<typename CharT, typename S, typename T>
-    class BasicRequiredArgumentBuilder;
+    class RequiredArgumentBuilder;
 
     template<typename CharT, typename S>
-    class BasicCommandContext;
+    class CommandContext;
 
     enum class CommandNodeType
     {
         RootCommandNode,
-        BasicLiteralCommandNode,
-        BasicArgumentCommandNode
+        LiteralCommandNode,
+        ArgumentCommandNode
     };
 
     template<typename CharT, typename S>
-    class BasicCommandNode
+    class CommandNode
     {
     public:
-        BasicCommandNode(BasicCommand<CharT, S> command, Predicate<S&> requirement, std::shared_ptr<BasicCommandNode<CharT, S>> redirect, BasicRedirectModifier<CharT, S> modifier, const bool forks)
+        CommandNode(Command<CharT, S> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<CharT, S>> redirect, RedirectModifier<CharT, S> modifier, const bool forks)
             : command(std::move(command))
             , requirement(std::move(requirement))
             , redirect(std::move(redirect))
             , modifier(std::move(modifier))
             , forks(std::move(forks))
         {}
-        BasicCommandNode() {}
-        virtual ~BasicCommandNode() = default;
+        CommandNode() {}
+        virtual ~CommandNode() = default;
     public:
-        inline BasicCommand<CharT, S> GetCommand() const
+        inline Command<CharT, S> GetCommand() const
         {
             return command;
         }
 
-        inline std::map<std::basic_string<CharT>, std::shared_ptr<BasicCommandNode<CharT, S>>, std::less<>> const& GetChildren() const
+        inline std::map<std::basic_string<CharT>, std::shared_ptr<CommandNode<CharT, S>>, std::less<>> const& GetChildren() const
         {
             return children;
         }
 
-        inline std::shared_ptr<BasicCommandNode<CharT, S>> GetChild(std::basic_string_view<CharT> name) const
+        inline std::shared_ptr<CommandNode<CharT, S>> GetChild(std::basic_string_view<CharT> name) const
         {
             auto found = children.find(name);
             if (found != children.end())
@@ -73,12 +73,12 @@ namespace brigadier
             return nullptr;
         }
 
-        inline std::shared_ptr<BasicCommandNode<CharT, S>> GetRedirect() const
+        inline std::shared_ptr<CommandNode<CharT, S>> GetRedirect() const
         {
             return redirect;
         }
 
-        inline BasicRedirectModifier<CharT, S> GetRedirectModifier() const 
+        inline RedirectModifier<CharT, S> GetRedirectModifier() const 
         {
             return modifier;
         }
@@ -100,13 +100,13 @@ namespace brigadier
             else return true;
         }
 
-        void AddChild(std::shared_ptr<BasicCommandNode<CharT, S>> node)
+        void AddChild(std::shared_ptr<CommandNode<CharT, S>> node)
         {
             if (node == nullptr)
                 return;
 
             if (node->GetNodeType() == CommandNodeType::RootCommandNode) {
-                throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add a RootCommandNode as a child to any other BasicCommandNode");
+                throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add a RootCommandNode as a child to any other CommandNode");
             }
 
             auto child = children.find(node->GetName());
@@ -115,7 +115,7 @@ namespace brigadier
                 auto child_node = child->second;
 
                 if (child_node->GetNodeType() != node->GetNodeType())
-                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
 
                 auto node_command = node->GetCommand();
                 if (node_command != nullptr) {
@@ -127,16 +127,16 @@ namespace brigadier
             }
             else {
                 children.emplace(node->GetName(), node);
-                if (node->GetNodeType() == CommandNodeType::BasicLiteralCommandNode) {
-                    literals.emplace_back(std::move(std::static_pointer_cast<BasicLiteralCommandNode<CharT, S>>(std::move(node))));
+                if (node->GetNodeType() == CommandNodeType::LiteralCommandNode) {
+                    literals.emplace_back(std::move(std::static_pointer_cast<LiteralCommandNode<CharT, S>>(std::move(node))));
                 }
-                else if (node->GetNodeType() == CommandNodeType::BasicArgumentCommandNode) {
-                    arguments.emplace_back(std::move(std::static_pointer_cast<BasicIArgumentCommandNode<CharT, S>>(std::move(node))));
+                else if (node->GetNodeType() == CommandNodeType::ArgumentCommandNode) {
+                    arguments.emplace_back(std::move(std::static_pointer_cast<IArgumentCommandNode<CharT, S>>(std::move(node))));
                 }
             }
         }
 
-        void FindAmbiguities(BasicAmbiguityConsumer<CharT, S> consumer)
+        void FindAmbiguities(AmbiguityConsumer<CharT, S> consumer)
         {
             for (auto [child_name, child] : children) {
                 for (auto [sibling_name, sibling] : children) {
@@ -160,7 +160,7 @@ namespace brigadier
             }
         }
 
-        std::tuple<std::shared_ptr<BasicCommandNode<CharT, S>>*, size_t> GetRelevantNodes(BasicStringReader<CharT>& input)
+        std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t> GetRelevantNodes(StringReader<CharT>& input)
         {
             if (literals.size() > 0) {
                 size_t cursor = input.GetCursor();
@@ -170,15 +170,15 @@ namespace brigadier
                 std::basic_string_view<CharT> text = input.GetString().substr(cursor, input.GetCursor() - cursor);
                 input.SetCursor(cursor);
                 auto literal = children.find(text);
-                if (literal != children.end() && literal->second->GetNodeType() == CommandNodeType::BasicLiteralCommandNode) {
-                    return std::tuple<std::shared_ptr<BasicCommandNode<CharT, S>>*, size_t>(&literal->second, 1);
+                if (literal != children.end() && literal->second->GetNodeType() == CommandNodeType::LiteralCommandNode) {
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>(&literal->second, 1);
                 }
                 else {
-                    return std::tuple<std::shared_ptr<BasicCommandNode<CharT, S>>*, size_t>((std::shared_ptr<BasicCommandNode<CharT, S>>*)arguments.data(), arguments.size());
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
                 }
             }
             else {
-                return std::tuple<std::shared_ptr<BasicCommandNode<CharT, S>>*, size_t>((std::shared_ptr<BasicCommandNode<CharT, S>>*)arguments.data(), arguments.size());
+                return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
             }
         }
 
@@ -194,32 +194,32 @@ namespace brigadier
         virtual std::basic_string<CharT> const& GetName() = 0;
         virtual std::basic_string<CharT> GetUsageText() = 0;
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() = 0;
-        virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder) = 0;
-        virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder) = 0;
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) = 0;
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) = 0;
 
         virtual CommandNodeType GetNodeType() = 0;
     protected:
         template<typename, typename, typename, typename>
-        friend class BasicArgumentBuilder;
+        friend class ArgumentBuilder;
         template<typename, typename>
-        friend class BasicMultiArgumentBuilder;
+        friend class MultiArgumentBuilder;
         template<typename, typename>
-        friend class BasicCommandDispatcher;
+        friend class CommandDispatcher;
         template<typename, typename, typename>
-        friend class BasicRequiredArgumentBuilder;
+        friend class RequiredArgumentBuilder;
         template<typename, typename>
-        friend class BasicLiteralArgumentBuilder;
+        friend class LiteralArgumentBuilder;
 
         virtual bool IsValidInput(std::basic_string_view<CharT> input) = 0;
         virtual std::basic_string_view<CharT> GetSortedKey() = 0;
     private:
-        std::map<std::basic_string<CharT>, std::shared_ptr<BasicCommandNode<CharT, S>>, std::less<>> children;
-        std::vector<std::shared_ptr<BasicLiteralCommandNode<CharT, S>>> literals;
-        std::vector<std::shared_ptr<BasicIArgumentCommandNode<CharT, S>>> arguments;
-        BasicCommand<CharT, S> command = nullptr;
+        std::map<std::basic_string<CharT>, std::shared_ptr<CommandNode<CharT, S>>, std::less<>> children;
+        std::vector<std::shared_ptr<LiteralCommandNode<CharT, S>>> literals;
+        std::vector<std::shared_ptr<IArgumentCommandNode<CharT, S>>> arguments;
+        Command<CharT, S> command = nullptr;
         Predicate<S&> requirement = nullptr;
-        std::shared_ptr<BasicCommandNode<CharT, S>> redirect = nullptr;
-        BasicRedirectModifier<CharT, S> modifier = nullptr;
+        std::shared_ptr<CommandNode<CharT, S>> redirect = nullptr;
+        RedirectModifier<CharT, S> modifier = nullptr;
         bool forks = false;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandNode);

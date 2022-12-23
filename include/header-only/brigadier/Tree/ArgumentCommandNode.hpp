@@ -9,19 +9,19 @@
 namespace brigadier
 {
     template<typename CharT, typename S, typename T>
-    class BasicRequiredArgumentBuilder;
+    class RequiredArgumentBuilder;
 
     template<typename CharT, typename S>
-    class BasicIArgumentCommandNode : public BasicCommandNode<CharT, S>
+    class IArgumentCommandNode : public CommandNode<CharT, S>
     {
     protected:
-        BasicIArgumentCommandNode(std::basic_string_view<CharT> name) : name(name) {}
-        virtual ~BasicIArgumentCommandNode() = default;
+        IArgumentCommandNode(std::basic_string_view<CharT> name) : name(name) {}
+        virtual ~IArgumentCommandNode() = default;
     public:
         virtual std::basic_string<CharT> const& GetName() {
             return name;
         }
-        virtual CommandNodeType GetNodeType() { return CommandNodeType::BasicArgumentCommandNode; }
+        virtual CommandNodeType GetNodeType() { return CommandNodeType::ArgumentCommandNode; }
     protected:
         virtual std::basic_string_view<CharT> GetSortedKey() {
             return name;
@@ -32,20 +32,20 @@ namespace brigadier
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(IArgumentCommandNode);
 
     template<typename CharT, typename S, typename T>
-    class BasicArgumentCommandNode : public BasicIArgumentCommandNode<CharT, S>
+    class ArgumentCommandNode : public IArgumentCommandNode<CharT, S>
     {
     private:
         static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_OPEN = BRIGADIER_LITERAL(CharT, "<");
         static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_CLOSE = BRIGADIER_LITERAL(CharT, ">");
     public:
         template<typename... Args>
-        BasicArgumentCommandNode(std::basic_string_view<CharT> name, Args&&... args)
-            : BasicIArgumentCommandNode<CharT, S>(name)
+        ArgumentCommandNode(std::basic_string_view<CharT> name, Args&&... args)
+            : IArgumentCommandNode<CharT, S>(name)
             , type(std::forward<Args>(args)...)
         {}
-        virtual ~BasicArgumentCommandNode() = default;
+        virtual ~ArgumentCommandNode() = default;
     public:
-        inline BasicSuggestionProvider<CharT, S> const& GetCustomSuggestions() const {
+        inline SuggestionProvider<CharT, S> const& GetCustomSuggestions() const {
             return customSuggestions;
         }
 
@@ -70,16 +70,16 @@ namespace brigadier
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() {
             return type.GetExamples();
         }
-        virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder) {
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {
             size_t start = reader.GetCursor();
             using Type = typename T::type;
             Type result = type.Parse(reader);
-            std::shared_ptr<BasicParsedArgument<CharT, S, T>> parsed = std::make_shared<BasicParsedArgument<CharT, S, T>>(start, reader.GetCursor(), std::move(result));
+            std::shared_ptr<ParsedArgument<CharT, S, T>> parsed = std::make_shared<ParsedArgument<CharT, S, T>>(start, reader.GetCursor(), std::move(result));
 
             contextBuilder.WithArgument(this->name, parsed);
             contextBuilder.WithNode(this, parsed->GetRange());
         }
-        virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             if (customSuggestions == nullptr) {
                 return type.template ListSuggestions<S>(context, builder);
@@ -91,18 +91,18 @@ namespace brigadier
     protected:
         virtual bool IsValidInput(std::basic_string_view<CharT> input) {
             try {
-                BasicStringReader<CharT> reader = BasicStringReader<CharT>(input);
+                StringReader<CharT> reader = StringReader<CharT>(input);
                 type.Parse(reader);
                 return !reader.CanRead() || reader.Peek() == ' ';
             }
-            catch (BasicCommandSyntaxException<CharT> const&) {
+            catch (CommandSyntaxException<CharT> const&) {
                 return false;
             }
         }
     private:
-        friend class BasicRequiredArgumentBuilder<CharT, S, T>;
+        friend class RequiredArgumentBuilder<CharT, S, T>;
         T type;
-        BasicSuggestionProvider<CharT, S> customSuggestions = nullptr;
+        SuggestionProvider<CharT, S> customSuggestions = nullptr;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(ArgumentCommandNode);
 }

@@ -6,15 +6,15 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class BasicParsedCommandNode
+    class ParsedCommandNode
     {
     public:
-        BasicParsedCommandNode(BasicCommandNode<CharT, S>* node, StringRange range) : node(node), range(std::move(range)) {}
+        ParsedCommandNode(CommandNode<CharT, S>* node, StringRange range) : node(node), range(std::move(range)) {}
 
-        inline BasicCommandNode<CharT, S>* GetNode()  const { return node;  }
+        inline CommandNode<CharT, S>* GetNode()  const { return node;  }
         inline StringRange     GetRange() const { return range; }
     private:
-        BasicCommandNode<CharT, S>* node;
+        CommandNode<CharT, S>* node;
         StringRange range;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParsedCommandNode);

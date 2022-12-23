@@ -28,15 +28,15 @@ namespace brigadier
     public:
         using type = T;
     public:
-        T Parse(BasicStringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader)
         {
             return reader.ReadValue<T>();
         }
 
         template<typename S>
-        std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
-            return BasicSuggestions<CharT>::Empty();
+            return Suggestions<CharT>::Empty();
         }
 
         static constexpr std::basic_string_view<CharT> GetTypeName()
@@ -72,7 +72,7 @@ namespace brigadier
             return str_type;
         }
 
-        std::basic_string<CharT> Parse(BasicStringReader<CharT>& reader) {
+        std::basic_string<CharT> Parse(StringReader<CharT>& reader) {
             if (str_type == StringArgType::GREEDY_PHRASE)
             {
                 std::basic_string<CharT> text(reader.GetRemaining());
@@ -134,7 +134,7 @@ namespace brigadier
 
         static std::basic_string<CharT> EscapeIfRequired(std::basic_string_view<CharT> input) {
             for (auto c : input) {
-                if (!BasicStringReader<CharT>::IsAllowedInUnquotedString(c)) {
+                if (!StringReader<CharT>::IsAllowedInUnquotedString(c)) {
                     return Escape(std::move(input));
                 }
             }
@@ -166,7 +166,7 @@ namespace brigadier
     {
     public:
         template<typename S>
-        std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             builder.AutoSuggestLowerCase(std::initializer_list({ BRIGADIER_LITERAL(CharT, "true"), BRIGADIER_LITERAL(CharT, "false") }));
             return builder.BuildFuture();
@@ -189,7 +189,7 @@ namespace brigadier
     class CharArgumentType : public ArgumentType<CharT, CharT>
     {
     public:
-        CharT Parse(BasicStringReader<CharT>& reader)
+        CharT Parse(StringReader<CharT>& reader)
         {
             if (reader.CanRead())
                 return reader.Read();
@@ -226,7 +226,7 @@ namespace brigadier
             return maximum;
         }
 
-        T Parse(BasicStringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
             T result = reader.ReadValue<T>();
@@ -298,7 +298,7 @@ namespace brigadier
     {
         static_assert(std::is_enum_v<T>, "T must be enum");
     public:
-        T Parse(BasicStringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
             auto str = reader.ReadString();
@@ -311,7 +311,7 @@ namespace brigadier
         }
 
         template<typename S>
-        std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             static constexpr auto names = magic_enum::enum_names<T>();
             builder.AutoSuggestLowerCase(names);

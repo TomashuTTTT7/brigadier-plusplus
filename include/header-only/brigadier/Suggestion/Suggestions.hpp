@@ -11,39 +11,39 @@
 namespace brigadier
 {
     template<typename CharT>
-    class BasicSuggestions
+    class Suggestions
     {
     public:
-        BasicSuggestions(StringRange range, std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
-        BasicSuggestions() : BasicSuggestions<CharT>(StringRange::At(0), {}) {}
+        Suggestions(StringRange range, std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
+        Suggestions() : Suggestions<CharT>(StringRange::At(0), {}) {}
 
         inline StringRange GetRange() const { return range; }
-        inline std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
+        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
         inline bool IsEmpty() { return suggestions.empty(); }
 
-        static inline std::future<BasicSuggestions<CharT>> Empty()
+        static inline std::future<Suggestions<CharT>> Empty()
         {
-            std::promise<BasicSuggestions<CharT>> f;
-            f.set_value(BasicSuggestions<CharT>());
+            std::promise<Suggestions<CharT>> f;
+            f.set_value(Suggestions<CharT>());
             return f.get_future();
         }
 
-        static inline BasicSuggestions<CharT> Merge(std::basic_string_view<CharT> command, std::vector<BasicSuggestions<CharT>> const& input, bool* cancel = nullptr)
+        static inline Suggestions<CharT> Merge(std::basic_string_view<CharT> command, std::vector<Suggestions<CharT>> const& input, bool* cancel = nullptr)
         {
             /**/ if (input.empty()) return {};
             else if (input.size() == 1) return input.front();
 
-            std::vector<BasicSuggestion<CharT>> suggestions;
+            std::vector<Suggestion<CharT>> suggestions;
 
             for (auto& sugs : input)
             {
                 suggestions.insert(suggestions.end(), sugs.GetList().begin(), sugs.GetList().end());
             }
-            return BasicSuggestions<CharT>::Create(command, suggestions, cancel);
+            return Suggestions<CharT>::Create(command, suggestions, cancel);
         }
-        static inline BasicSuggestions<CharT> Create(std::basic_string_view<CharT> command, std::vector<BasicSuggestion<CharT>>& suggestions, bool* cancel = nullptr)
+        static inline Suggestions<CharT> Create(std::basic_string_view<CharT> command, std::vector<Suggestion<CharT>>& suggestions, bool* cancel = nullptr)
         {
-            BasicSuggestions<CharT> ret;
+            Suggestions<CharT> ret;
             if (suggestions.empty()) return ret;
             size_t start = std::numeric_limits<size_t>::max();
             size_t end = std::numeric_limits<size_t>::min();
@@ -65,7 +65,7 @@ namespace brigadier
         }
     private:
         StringRange range;
-        std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggestions;
+        std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions;
     };
     BRIGADIER_SPECIALIZE_BASIC(Suggestions);
 }

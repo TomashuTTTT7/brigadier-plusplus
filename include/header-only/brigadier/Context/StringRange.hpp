@@ -20,7 +20,7 @@ namespace brigadier
         }
 
         template<typename CharT>
-        inline std::basic_string_view<CharT> Get(BasicStringReader<CharT> reader) const {
+        inline std::basic_string_view<CharT> Get(StringReader<CharT> reader) const {
             return reader.GetString().substr(start, end - start);
         }
         template<typename CharT>
