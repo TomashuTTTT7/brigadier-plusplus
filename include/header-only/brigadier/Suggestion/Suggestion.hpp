@@ -2,7 +2,6 @@
 
 #include "../Context/StringRange.hpp"
 #include <cstring>
-#include <cwctype>
 
 namespace brigadier
 {
@@ -15,10 +14,10 @@ namespace brigadier
     class BasicSuggestion
     {
     public:
-        BasicSuggestion(BasicStringRange<CharT> range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        BasicSuggestion(BasicStringRange<CharT> range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
+        BasicSuggestion(StringRange range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        BasicSuggestion(StringRange range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
 
-        inline BasicStringRange<CharT> GetRange() const { return range; }
+        inline StringRange GetRange() const { return range; }
         inline std::basic_string<CharT> const& GetText() const { return text; }
         inline std::basic_string_view<CharT> GetTooltip() const { return tooltip; }
 
@@ -28,7 +27,7 @@ namespace brigadier
                 return text;
             }
             std::basic_string<CharT> result;
-            result.reserve(range.GetStart() + text.length() + input.length() - (std::min)(range.GetEnd(), (int)input.length()));
+            result.reserve(range.GetStart() + text.length() + input.length() - (std::min)(range.GetEnd(), input.length()));
             if (range.GetStart() > 0) {
                 result.append(input.substr(0, range.GetStart()));
             }
@@ -39,7 +38,7 @@ namespace brigadier
             return result;
         }
 
-        void Expand(std::basic_string_view<CharT> command, BasicStringRange<CharT> range)
+        void Expand(std::basic_string_view<CharT> command, StringRange range)
         {
             if (this->range == range)
                 return;
@@ -56,37 +55,29 @@ namespace brigadier
     protected:
         friend class BasicSuggestions<CharT>;
         friend class BasicSuggestionsBuilder<CharT>;
-        BasicSuggestion<CharT>(std::basic_string<CharT> text, BasicStringRange<CharT> range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        BasicSuggestion<CharT>(std::basic_string<CharT> text, BasicStringRange<CharT> range) : range(std::move(range)), text(std::move(text)) {}
+        BasicSuggestion<CharT>(std::basic_string<CharT> text, StringRange range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        BasicSuggestion<CharT>(std::basic_string<CharT> text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
     private:
-        BasicStringRange<CharT> range;
+        StringRange range;
         std::basic_string<CharT> text;
         std::basic_string_view<CharT> tooltip;
     };
-    BRIGADIER_SPECIALIZE_BASIC_TEMPL(Suggestion);
+    BRIGADIER_SPECIALIZE_BASIC(Suggestion);
 
     template<typename CharT>
     struct CompareNoCase {
         inline bool operator() (BasicSuggestion<CharT> const& a, BasicSuggestion<CharT> const& b) const
         {
-            auto& sa = a.GetText();
-            auto& sb = b.GetText();
-            if (sa.size() != sb.size())
-                return false;
-            for (size_t i = 0; i < sa.size(); ++i) {
-                if constexpr (std::is_same_v<std::remove_cv_t<CharT>, char>)
-                {
-                    if (std::tolower(sa[i]) != std::tolower(sb[i])) return false;
-                }
-                else if constexpr (std::is_same_v<std::remove_cv_t<CharT>, wchar_t>)
-                {
-                    if (std::towlower(sa[i]) != std::towlower(sb[i])) return false;
-                }
-                else {
-                    return sa == sb;
-                }
+            CharT const* s1 = a.GetText().data();
+            CharT const* s2 = b.GetText().data();
+
+            for (size_t i = 0; s1[i] && s2[i]; ++i)
+            {
+                int diff = std::tolower(s1[i]) - std::tolower(s2[i]);
+                if (diff) return diff < 0;
             }
-            return true;
+
+            return false;
         }
     };
 }

@@ -242,7 +242,7 @@ namespace brigadier
 
     std::string_view StringReader::ReadUnquotedString()
     {
-        int start = cursor;
+        size_t start = cursor;
         while (CanRead() && IsAllowedInUnquotedString(Peek())) {
             Skip();
         }
@@ -367,7 +367,7 @@ namespace brigadier
     class StringRange
     {
     public:
-        StringRange(const int start, const int end) : start(start), end(end) {}
+        StringRange(int start, const int end) : start(start), end(end) {}
 
         inline int GetStart() const { return start; }
         inline int GetEnd()   const { return end; }
@@ -2138,26 +2138,26 @@ namespace brigadier
     class CommandDispatcher;
 
     template<typename S>
-    class ParseResults
+    class BasicParseResults
     {
     public:
-        ParseResults(CommandContext<S> context, StringReader reader, std::map<CommandNode<S>*, CommandSyntaxException> exceptions)
+        BasicParseResults(CommandContext<S> context, StringReader reader, std::map<CommandNode<S>*, CommandSyntaxException> exceptions)
             : context(std::move(context))
             , reader(std::move(reader))
             , exceptions(std::move(exceptions))
         {}
-        ParseResults(CommandContext<S> context, StringReader reader)
+        BasicParseResults(CommandContext<S> context, StringReader reader)
             : context(std::move(context))
             , reader(std::move(reader))
         {}
 
-        ParseResults(CommandContext<S> context) : ParseResults(std::move(context), StringReader()) {}
+        BasicParseResults(CommandContext<S> context) : BasicParseResults(std::move(context), StringReader()) {}
     public:
         inline CommandContext<S> const& GetContext() const { return context; }
         inline StringReader      const& GetReader()  const { return reader; }
         inline std::map<CommandNode<S>*, CommandSyntaxException> const& GetExceptions() const { return exceptions; }
 
-        inline bool IsBetterThan(ParseResults<S> const& other) const
+        inline bool IsBetterThan(BasicParseResults<S> const& other) const
         {
             if (!GetReader().CanRead() && other.GetReader().CanRead()) {
                 return true;
@@ -2316,7 +2316,7 @@ namespace brigadier
         /**
         Parses and executes a given command.
 
-        This is a shortcut to first Parse(StringReader, Object) and then Execute(ParseResults).
+        This is a shortcut to first Parse(StringReader, Object) and then Execute(BasicParseResults).
 
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
@@ -2340,7 +2340,7 @@ namespace brigadier
         \throws std::runtime_error if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
-        \see Execute(ParseResults)
+        \see Execute(BasicParseResults)
         \see Execute(StringReader, Object)
         */
         int Execute(std::string_view input, S source)
@@ -2352,7 +2352,7 @@ namespace brigadier
         /**
         Parses and executes a given command.
 
-        This is a shortcut to first Parse(StringReader, Object) and then Execute(ParseResults).
+        This is a shortcut to first Parse(StringReader, Object) and then Execute(BasicParseResults).
 
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
@@ -2376,7 +2376,7 @@ namespace brigadier
         \throws std::runtime_error if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
-        \see Execute(ParseResults)
+        \see Execute(BasicParseResults)
         \see Execute(String, Object)
         */
         int Execute(StringReader& input, S source)
@@ -2411,7 +2411,7 @@ namespace brigadier
         \see Execute(String, Object)
         \see Execute(StringReader, Object)
         */
-        int Execute(ParseResults<S>& parse)
+        int Execute(BasicParseResults<S>& parse)
         {
             if (parse.GetReader().CanRead()) {
                 if (parse.GetExceptions().size() == 1) {
@@ -2501,25 +2501,25 @@ namespace brigadier
         If the command passes through a node that is CommandNode::IsFork() then the resulting context will be marked as 'forked'.
         Forked contexts may contain child contexts, which may be modified by the RedirectModifier attached to the fork.
 
-        Parsing a command can never fail, you will always be provided with a new ParseResults.
+        Parsing a command can never fail, you will always be provided with a new BasicParseResults.
         However, that does not mean that it will always parse into a valid command. You should inspect the returned results
-        to check for validity. If its ParseResults::GetReader() StringReader::CanRead() then it did not finish
+        to check for validity. If its BasicParseResults::GetReader() StringReader::CanRead() then it did not finish
         parsing successfully. You can use that position as an indicator to the user where the command stopped being valid.
-        You may inspect ParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
+        You may inspect BasicParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
         not find any valid commands. It may contain multiple exceptions, one for each "potential node" that it could have visited,
         explaining why it did not go down that node.
 
-        When you eventually call Execute(ParseResults) with the result of this method, the above error checking
+        When you eventually call Execute(BasicParseResults) with the result of this method, the above error checking
         will occur. You only need to inspect it yourself if you wish to handle that yourself.
 
         \param command a command string to parse
         \param source a custom "source" object, usually representing the originator of this command
         \return the result of parsing this command
         \see Parse(StringReader, Object)
-        \see Execute(ParseResults)
+        \see Execute(BasicParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<S> Parse(std::string_view command, S source)
+        BasicParseResults<S> Parse(std::string_view command, S source)
         {
             StringReader reader = StringReader(command);
             return Parse(reader, std::move(source));
@@ -2534,41 +2534,41 @@ namespace brigadier
         If the command passes through a node that is CommandNode::IsFork() then the resulting context will be marked as 'forked'.
         Forked contexts may contain child contexts, which may be modified by the RedirectModifier attached to the fork.
 
-        Parsing a command can never fail, you will always be provided with a new ParseResults.
+        Parsing a command can never fail, you will always be provided with a new BasicParseResults.
         However, that does not mean that it will always parse into a valid command. You should inspect the returned results
-        to check for validity. If its ParseResults::GetReader() StringReader::CanRead() then it did not finish
+        to check for validity. If its BasicParseResults::GetReader() StringReader::CanRead() then it did not finish
         parsing successfully. You can use that position as an indicator to the user where the command stopped being valid.
-        You may inspect ParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
+        You may inspect BasicParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
         not find any valid commands. It may contain multiple exceptions, one for each "potential node" that it could have visited,
         explaining why it did not go down that node.
 
-        When you eventually call Execute(ParseResults) with the result of this method, the above error checking
+        When you eventually call Execute(BasicParseResults) with the result of this method, the above error checking
         will occur. You only need to inspect it yourself if you wish to handle that yourself.
 
         \param command a command string to parse
         \param source a custom "source" object, usually representing the originator of this command
         \return the result of parsing this command
         \see Parse(String, Object)
-        \see Execute(ParseResults)
+        \see Execute(BasicParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<S> Parse(StringReader& command, S source)
+        BasicParseResults<S> Parse(StringReader& command, S source)
         {
-            ParseResults<S> result(CommandContext<S>(std::move(source), root.get(), command.GetCursor()), command);
+            BasicParseResults<S> result(CommandContext<S>(std::move(source), root.get(), command.GetCursor()), command);
             ParseNodes(root.get(), result);
             return result;
         }
 
     private:
-        void ParseNodes(CommandNode<S>* node, ParseResults<S>& result)
+        void ParseNodes(CommandNode<S>* node, BasicParseResults<S>& result)
         {
             if (!node)
                 return;
 
             S& source = result.context.GetSource();
 
-            std::optional<ParseResults<S>> best_potential = {};
-            std::optional<ParseResults<S>> current_result_ctx = {}; // delay initialization
+            std::optional<BasicParseResults<S>> best_potential = {};
+            std::optional<BasicParseResults<S>> current_result_ctx = {}; // delay initialization
 
             int cursor = result.reader.GetCursor();
 
@@ -2588,7 +2588,7 @@ namespace brigadier
                 }
                 else {
                     // create context
-                    current_result_ctx = ParseResults<S>(CommandContext<S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
+                    current_result_ctx = BasicParseResults<S>(CommandContext<S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
                 }
 
                 auto& current_result = current_result_ctx.value();
@@ -2618,7 +2618,7 @@ namespace brigadier
                 if (reader.CanRead(child->GetRedirect() == nullptr ? 2 : 1)) {
                     reader.Skip();
                     if (child->GetRedirect() != nullptr) {
-                        ParseResults<S> child_result(CommandContext<S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
+                        BasicParseResults<S> child_result(CommandContext<S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
                         ParseNodes(child->GetRedirect().get(), child_result);
                         result.context.Merge(std::move(context));
                         result.context.WithChildContext(std::move(child_result.context));
@@ -2855,7 +2855,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(ParseResults<S>& parse, bool* cancel = nullptr)
+        std::future<Suggestions> GetCompletionSuggestions(BasicParseResults<S>& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -2877,9 +2877,9 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(ParseResults<S>& parse, int cursor, bool* cancel = nullptr)
+        std::future<Suggestions> GetCompletionSuggestions(BasicParseResults<S>& parse, int cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<S>* parse, int cursor, bool* cancel) {
+            return std::async(std::launch::async, [](BasicParseResults<S>* parse, int cursor, bool* cancel) {
                 auto context = parse->GetContext();
 
                 SuggestionContext<S> nodeBeforeCursor = context.FindSuggestionContext(cursor);

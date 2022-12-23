@@ -3,180 +3,180 @@
 
 namespace brigadier
 {
-    Command<int> command = [](CommandContext<int>& ctx) -> int { return 42; };
-    Command<int> subcommand = [](CommandContext<int>& ctx) -> int { return 100; };
-    Command<int> wrongcommand = [](CommandContext<int>& ctx) -> int { Assert::Fail(); return 0; };
+    WCommand<int> command = [](WCommandContext<int>& ctx) -> int { return 42; };
+    WCommand<int> subcommand = [](WCommandContext<int>& ctx) -> int { return 100; };
+    WCommand<int> wrongcommand = [](WCommandContext<int>& ctx) -> int { Assert::Fail(); return 0; };
     int source = 0;
 
     TEST_CLASS(CommandDispatcherTest)
     {
         TEST_METHOD(testCreateAndExecuteCommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Executes(command);
 
-            Assert::AreEqual(subject.Execute("foo", source), 42);
+            Assert::AreEqual(subject.Execute(L"foo", source), 42);
         }
 
         TEST_METHOD(testCreateAndExecuteOffsetCommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Executes(command);
 
-            Assert::AreEqual(subject.Execute(InputWithOffset("/foo", 1), source), 42);
+            Assert::AreEqual(subject.Execute(InputWithOffset(L"/foo", 1), source), 42);
         }
 
         TEST_METHOD(testCreateAndMergeCommands) {
-            CommandDispatcher<int> subject;
-            subject.Register("base").Then<Literal>("foo").Executes(command);
-            subject.Register("base").Then<Literal>("bar").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"base").Then<Literal>(L"foo").Executes(command);
+            subject.Register(L"base").Then<Literal>(L"bar").Executes(command);
 
-            Assert::AreEqual(subject.Execute("base foo", source), 42);
-            Assert::AreEqual(subject.Execute("base bar", source), 42);
+            Assert::AreEqual(subject.Execute(L"base foo", source), 42);
+            Assert::AreEqual(subject.Execute(L"base bar", source), 42);
         }
 
         TEST_METHOD(testExecuteUnknownCommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("bar");
-            subject.Register("baz");
+            WCommandDispatcher<int> subject;
+            subject.Register(L"bar");
+            subject.Register(L"baz");
 
             try {
-                subject.Execute("foo", source);
+                subject.Execute(L"foo", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 0);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
         }
 
         TEST_METHOD(testExecuteImpermissibleCommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Requires([](int& src) { return false; });
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Requires([](int& src) { return false; });
 
             try {
-                subject.Execute("foo", source);
+                subject.Execute(L"foo", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 0);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
         }
 
         TEST_METHOD(testExecuteEmptyCommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("");
+            WCommandDispatcher<int> subject;
+            subject.Register(L"");
 
             try {
-                subject.Execute("", source);
+                subject.Execute(L"", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 0);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
         }
 
         TEST_METHOD(testExecuteUnknownSubcommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Executes(command);
 
             try {
-                subject.Execute("foo bar", source);
+                subject.Execute(L"foo bar", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 4);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 4);
             }
         }
 
         TEST_METHOD(testExecuteIncorrectLiteral) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Executes(command).Then<Literal>("bar");
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Executes(command).Then<Literal>(L"bar");
 
             try {
-                subject.Execute("foo baz", source);
+                subject.Execute(L"foo baz", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 4);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 4);
             }
         }
 
         TEST_METHOD(testExecuteAmbiguousIncorrectArgument) {
-            CommandDispatcher<int> subject;
-            auto foo = subject.Register("foo");
+            WCommandDispatcher<int> subject;
+            auto foo = subject.Register(L"foo");
             foo.Executes(command);
-            foo.Then<Literal>("bar");
-            foo.Then<Literal>("baz");
+            foo.Then<Literal>(L"bar");
+            foo.Then<Literal>(L"baz");
 
             try {
-                subject.Execute("foo unknown", source);
+                subject.Execute(L"foo unknown", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 4);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 4);
             }
         }
 
         TEST_METHOD(testExecuteSubcommand) {
-            CommandDispatcher<int> subject;
-            auto foo = subject.Register("foo");
-            foo.Then<Literal>("a");
-            foo.Then<Literal>("=").Executes(subcommand);
-            foo.Then<Literal>("c");
+            WCommandDispatcher<int> subject;
+            auto foo = subject.Register(L"foo");
+            foo.Then<Literal>(L"a");
+            foo.Then<Literal>(L"=").Executes(subcommand);
+            foo.Then<Literal>(L"c");
             foo.Executes(command);
 
-            Assert::AreEqual(subject.Execute("foo =", source), 100);
+            Assert::AreEqual<size_t>(subject.Execute(L"foo =", source), 100);
         }
 
         TEST_METHOD(testParseIncompleteLiteral) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Then<Literal>("bar").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Then<Literal>(L"bar").Executes(command);
 
-            auto Parse = subject.Parse("foo ", source);
-            Assert::AreEqual(Parse.GetReader().GetRemaining(), { " " });
+            auto Parse = subject.Parse(L"foo ", source);
+            Assert::AreEqual(Parse.GetReader().GetRemaining(), { L" " });
             Assert::AreEqual(Parse.GetContext().GetNodes().size(), { 1 });
         }
 
         TEST_METHOD(testParseIncompleteArgument) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Then<Argument, Integer>("bar").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Then<Argument, Integer>(L"bar").Executes(command);
 
-            auto Parse = subject.Parse("foo ", source);
-            Assert::AreEqual(Parse.GetReader().GetRemaining(), { " " });
+            auto Parse = subject.Parse(L"foo ", source);
+            Assert::AreEqual(Parse.GetReader().GetRemaining(), { L" " });
             Assert::AreEqual(Parse.GetContext().GetNodes().size(), { 1 });
         }
 
         TEST_METHOD(testExecuteAmbiguiousParentSubcommand) {
-            CommandDispatcher<int> subject;
+            WCommandDispatcher<int> subject;
 
-            auto test = subject.Register("test");
-            test.Then<Argument, Integer>("incorrect").Executes(command);
-            test.Then<Argument, Integer>("right").Then<Argument, Integer>("sub").Executes(subcommand);
+            auto test = subject.Register(L"test");
+            test.Then<Argument, Integer>(L"incorrect").Executes(command);
+            test.Then<Argument, Integer>(L"right").Then<Argument, Integer>(L"sub").Executes(subcommand);
 
-            Assert::AreEqual(subject.Execute("test 1 2", source), 100);
+            Assert::AreEqual(subject.Execute(L"test 1 2", source), 100);
         }
 
         TEST_METHOD(testExecuteAmbiguiousParentSubcommandViaRedirect) {
-            CommandDispatcher<int> subject;
+            WCommandDispatcher<int> subject;
 
-            auto real = subject.Register("test");
-            real.Then<Argument, Integer>("incorrect").Executes(command);
-            real.Then<Argument, Integer>("right").Then<Argument, Integer>("sub").Executes(subcommand);
+            auto real = subject.Register(L"test");
+            real.Then<Argument, Integer>(L"incorrect").Executes(command);
+            real.Then<Argument, Integer>(L"right").Then<Argument, Integer>(L"sub").Executes(subcommand);
 
-            subject.Register("redirect").Redirect(real);
+            subject.Register(L"redirect").Redirect(real);
 
-            Assert::AreEqual(subject.Execute("redirect 1 2", source), 100);
+            Assert::AreEqual(subject.Execute(L"redirect 1 2", source), 100);
         }
 
         TEST_METHOD(testExecuteRedirectedMultipleTimes) {
-            CommandDispatcher<int> subject;
-            auto concreteNode = subject.Register("actual");
+            WCommandDispatcher<int> subject;
+            auto concreteNode = subject.Register(L"actual");
             concreteNode.Executes(command);
-            auto redirectNode = subject.Register("redirected");
+            auto redirectNode = subject.Register(L"redirected");
             redirectNode.Redirect(subject.GetRoot());
 
-            std::string_view input = "redirected redirected actual";
+            std::wstring_view input = L"redirected redirected actual";
 
             auto parse = subject.Parse(input, source);
-            Assert::AreEqual(parse.GetContext().GetRange().Get(input), { "redirected" });
+            Assert::AreEqual(parse.GetContext().GetRange().Get(input), { L"redirected" });
             Assert::AreEqual(parse.GetContext().GetNodes().size(), { 1 });
             Assert::AreEqual((void*)parse.GetContext().GetRootNode(), { (void*)subject.GetRoot().get() });
             AssertRange(parse.GetContext().GetNodes()[0].GetRange(), parse.GetContext().GetRange());
@@ -184,7 +184,7 @@ namespace brigadier
 
             auto child1 = parse.GetContext().GetChild();
             Assert::IsNotNull(child1);
-            Assert::AreEqual(child1->GetRange().Get(input), { "redirected" });
+            Assert::AreEqual(child1->GetRange().Get(input), { L"redirected" });
             Assert::AreEqual(child1->GetNodes().size(), { 1 });
             Assert::AreEqual((void*)child1->GetRootNode(), { (void*)subject.GetRoot().get() });
             AssertRange(child1->GetNodes()[0].GetRange(), child1->GetRange());
@@ -192,7 +192,7 @@ namespace brigadier
 
             auto child2 = child1->GetChild();
             Assert::IsNotNull(child2);
-            Assert::AreEqual(child2->GetRange().Get(input), { "actual" });
+            Assert::AreEqual(child2->GetRange().Get(input), { L"actual" });
             Assert::AreEqual(child2->GetNodes().size(), { 1 });
             Assert::AreEqual((void*)child2->GetRootNode(), { (void*)subject.GetRoot().get() });
             AssertRange(child2->GetNodes()[0].GetRange(), child2->GetRange());
@@ -202,16 +202,16 @@ namespace brigadier
         }
 
         TEST_METHOD(testExecuteRedirected) {
-            CommandDispatcher<int> subject;
+            WCommandDispatcher<int> subject;
 
-            auto concreteNode = subject.Register("actual");
+            auto concreteNode = subject.Register(L"actual");
             concreteNode.Executes(command);
-            auto redirectNode = subject.Register("redirected");
-            redirectNode.Fork(subject.GetRoot(), [](CommandContext<int>& context) -> std::vector<int> { return { 1, 2 }; });
+            auto redirectNode = subject.Register(L"redirected");
+            redirectNode.Fork(subject.GetRoot(), [](WCommandContext<int>& context) -> std::vector<int> { return { 1, 2 }; });
 
-            std::string_view input = "redirected actual";
+            std::wstring_view input = L"redirected actual";
             auto parse = subject.Parse(input, source);
-            Assert::AreEqual(parse.GetContext().GetRange().Get(input), { "redirected" });
+            Assert::AreEqual(parse.GetContext().GetRange().Get(input), { L"redirected" });
             Assert::AreEqual(parse.GetContext().GetNodes().size(), { 1 });
             Assert::AreEqual((void*)parse.GetContext().GetRootNode(), (void*)subject.GetRoot().get());
             AssertRange(parse.GetContext().GetNodes()[0].GetRange(), parse.GetContext().GetRange());
@@ -220,7 +220,7 @@ namespace brigadier
 
             auto parent = parse.GetContext().GetChild();
             Assert::IsNotNull(parent);
-            Assert::AreEqual(parent->GetRange().Get(input), { "actual" });
+            Assert::AreEqual(parent->GetRange().Get(input), { L"actual" });
             Assert::AreEqual(parent->GetNodes().size(), { 1 });
             AssertRange(parent->GetNodes()[0].GetRange(), parent->GetRange());
             Assert::AreEqual((void*)parent->GetNodes()[0].GetNode(), (void*)concreteNode.GetNode().get());
@@ -230,121 +230,121 @@ namespace brigadier
         }
 
         TEST_METHOD(testExecuteOrphanedSubcommand) {
-            CommandDispatcher<int> subject;
-            auto foo = subject.Register("foo").Executes(command).Then<Argument, Integer>("bar");
+            WCommandDispatcher<int> subject;
+            auto foo = subject.Register(L"foo").Executes(command).Then<Argument, Integer>(L"bar");
 
             try {
-                subject.Execute("foo 5", source);
+                subject.Execute(L"foo 5", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 5);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 5);
             }
         }
 
         TEST_METHOD(testExecute_invalidOther) {
-            CommandDispatcher<int> subject;
-            subject.Register("w").Executes(wrongcommand);
-            subject.Register("world").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"w").Executes(wrongcommand);
+            subject.Register(L"world").Executes(command);
 
-            Assert::AreEqual(subject.Execute("world", source), 42);
+            Assert::AreEqual<size_t>(subject.Execute(L"world", source), 42);
         }
 
         TEST_METHOD(parse_noSpaceSeparator) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Then<Argument, Integer>("bar").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Then<Argument, Integer>(L"bar").Executes(command);
 
             try {
-                subject.Execute("foo$", source);
+                subject.Execute(L"foo$", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 0);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
         }
 
         TEST_METHOD(testExecuteInvalidSubcommand) {
-            CommandDispatcher<int> subject;
-            subject.Register("foo").Then<Argument, Integer>("bar").Executes(command);
+            WCommandDispatcher<int> subject;
+            subject.Register(L"foo").Then<Argument, Integer>(L"bar").Executes(command);
 
             try {
-                subject.Execute("foo bar", source);
+                subject.Execute(L"foo bar", source);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), 4);
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 4);
             }
         }
 
-        TEST_METHOD(testGetPath) {
-            CommandDispatcher<int> subject;
-            auto bar = MakeLiteral<int>("bar");
-            subject.Register("foo").Then(bar);
+        //TEST_METHOD(testGetPath) {
+        //    WCommandDispatcher<int> subject;
+        //    auto bar = MakeLiteral<wchar_t, int>(L"bar");
+        //    subject.Register(L"foo").Then(bar);
+        //
+        //    AssertArray(subject.GetPath(bar.GetCommandNode().get()), { L"foo", L"bar" });
+        //}
 
-            AssertArray(subject.GetPath(bar.GetCommandNode().get()), { "foo", "bar" });
-        }
-
-        TEST_METHOD(testFindNodeExists) {
-            CommandDispatcher<int> subject;
-            auto bar = MakeLiteral<int>("bar");
-            subject.Register("foo").Then(bar);
-
-            Assert::AreEqual((void*)subject.FindNode({ "foo", "bar" }), (void*)bar.GetCommandNode().get());
-        }
+        //TEST_METHOD(testFindNodeExists) {
+        //    WCommandDispatcher<int> subject;
+        //    auto bar = MakeLiteral<wchar_t, int>(L"bar");
+        //    subject.Register(L"foo").Then(bar);
+        //
+        //    Assert::AreEqual((void*)subject.FindNode({ L"foo", L"bar" }), (void*)bar.GetCommandNode().get());
+        //}
 
         TEST_METHOD(testFindNodeDoesntExist) {
-            CommandDispatcher<int> subject;
-            Assert::IsNull(subject.FindNode({ "foo", "bar" }));
+            WCommandDispatcher<int> subject;
+            Assert::IsNull(subject.FindNode({ L"foo", L"bar" }));
         }
     };
 
     TEST_CLASS(CommandDispatcherUsagesTest)
     {
-        CommandDispatcher<int> subject;
+        WCommandDispatcher<int> subject;
 
         TEST_METHOD_INITIALIZE(init)
         {
-            auto a = subject.Register("a");
+            auto a = subject.Register(L"a");
 
-            auto a1 = a.Then<Literal>("1");
-            a1.Then<Literal>("i").Executes(command);
-            a1.Then<Literal>("ii").Executes(command);
+            auto a1 = a.Then<Literal>(L"1");
+            a1.Then<Literal>(L"i").Executes(command);
+            a1.Then<Literal>(L"ii").Executes(command);
 
-            auto a2 = a.Then<Literal>("2");
-            a2.Then<Literal>("i").Executes(command);
-            a2.Then<Literal>("ii").Executes(command);
+            auto a2 = a.Then<Literal>(L"2");
+            a2.Then<Literal>(L"i").Executes(command);
+            a2.Then<Literal>(L"ii").Executes(command);
 
-            subject.Register("b").Then<Literal>("1").Executes(command);
+            subject.Register(L"b").Then<Literal>(L"1").Executes(command);
 
-            subject.Register("c").Executes(command);
+            subject.Register(L"c").Executes(command);
 
-            subject.Register("d").Requires([](int&) -> bool { return false; }).Executes(command);
+            subject.Register(L"d").Requires([](int&) -> bool { return false; }).Executes(command);
 
-            auto& e1 = subject.Register("e").Executes(command).Then<Literal>("1").Executes(command);
-            e1.Then<Literal>("i").Executes(command);
-            e1.Then<Literal>("ii").Executes(command);
+            auto& e1 = subject.Register(L"e").Executes(command).Then<Literal>(L"1").Executes(command);
+            e1.Then<Literal>(L"i").Executes(command);
+            e1.Then<Literal>(L"ii").Executes(command);
 
-            auto f = subject.Register("f");
-            auto f1 = f.Then<Literal>("1");
-            f1.Then<Literal>("i").Executes(command);
-            f1.Then<Literal>("ii").Executes(command).Requires([](int&) -> bool { return false; });
-            auto f2 = f.Then<Literal>("2");
-            f2.Then<Literal>("i").Executes(command).Requires([](int&) -> bool { return false; });
-            f2.Then<Literal>("ii").Executes(command);
+            auto f = subject.Register(L"f");
+            auto f1 = f.Then<Literal>(L"1");
+            f1.Then<Literal>(L"i").Executes(command);
+            f1.Then<Literal>(L"ii").Executes(command).Requires([](int&) -> bool { return false; });
+            auto f2 = f.Then<Literal>(L"2");
+            f2.Then<Literal>(L"i").Executes(command).Requires([](int&) -> bool { return false; });
+            f2.Then<Literal>(L"ii").Executes(command);
 
-            subject.Register("g").Executes(command).Then<Literal>("1").Then<Literal>("i").Executes(command);
+            subject.Register(L"g").Executes(command).Then<Literal>(L"1").Then<Literal>(L"i").Executes(command);
 
-            auto& h = subject.Register("h").Executes(command);
-            h.Then<Literal>("1").Then<Literal>("i").Executes(command);
-            h.Then<Literal>("2").Then<Literal>("i").Then<Literal>("ii").Executes(command);
-            h.Then<Literal>("3").Executes(command);
+            auto& h = subject.Register(L"h").Executes(command);
+            h.Then<Literal>(L"1").Then<Literal>(L"i").Executes(command);
+            h.Then<Literal>(L"2").Then<Literal>(L"i").Then<Literal>(L"ii").Executes(command);
+            h.Then<Literal>(L"3").Executes(command);
 
-            auto& i = subject.Register("i").Executes(command);
-            i.Then<Literal>("1").Executes(command);
-            i.Then<Literal>("2").Executes(command);
+            auto& i = subject.Register(L"i").Executes(command);
+            i.Then<Literal>(L"1").Executes(command);
+            i.Then<Literal>(L"2").Executes(command);
 
-            subject.Register("j").Redirect(subject.GetRoot());
-            subject.Register("k").Redirect(h);
+            subject.Register(L"j").Redirect(subject.GetRoot());
+            subject.Register(L"k").Redirect(h);
         }
 
         TEST_METHOD_CLEANUP(cleanup)
@@ -352,25 +352,25 @@ namespace brigadier
             subject = {};
         }
 
-        CommandNode<int>* get(std::string_view command) {
+        WCommandNode<int>* get(std::wstring_view command) {
             return subject.Parse(command, source).GetContext().GetNodes().back().GetNode();
         }
 
-        CommandNode<int>* get(StringReader command) {
+        WCommandNode<int>* get(WStringReader command) {
             return subject.Parse(command, source).GetContext().GetNodes().back().GetNode();
         }
 
 
 
         TEST_METHOD(testAllUsage_noCommands) {
-            subject = CommandDispatcher<int>();
+            subject = WCommandDispatcher<int>();
             auto results = subject.GetAllUsage(subject.GetRoot().get(), source, true);
             Assert::IsTrue(results.empty());
         }
 
 
         TEST_METHOD(testSmartUsage_noCommands) {
-            subject = CommandDispatcher<int>();
+            subject = WCommandDispatcher<int>();
             auto results = subject.GetSmartUsage(subject.GetRoot().get(), source);
             Assert::IsTrue(results.empty());
         }
@@ -379,69 +379,69 @@ namespace brigadier
         TEST_METHOD(testAllUsage_root) {
             auto results = subject.GetAllUsage(subject.GetRoot().get(), source, true);
             AssertArray(results, {
-                "a 1 i",
-                "a 1 ii",
-                "a 2 i",
-                "a 2 ii",
-                "b 1",
-                "c",
-                "e",
-                "e 1",
-                "e 1 i",
-                "e 1 ii",
-                "f 1 i",
-                "f 2 ii",
-                "g",
-                "g 1 i",
-                "h",
-                "h 1 i",
-                "h 2 i ii",
-                "h 3",
-                "i",
-                "i 1",
-                "i 2",
-                "j ...",
-                "k -> h",
-                });
+                L"a 1 i",
+                L"a 1 ii",
+                L"a 2 i",
+                L"a 2 ii",
+                L"b 1",
+                L"c",
+                L"e",
+                L"e 1",
+                L"e 1 i",
+                L"e 1 ii",
+                L"f 1 i",
+                L"f 2 ii",
+                L"g",
+                L"g 1 i",
+                L"h",
+                L"h 1 i",
+                L"h 2 i ii",
+                L"h 3",
+                L"i",
+                L"i 1",
+                L"i 2",
+                L"j ...",
+                L"k -> h",
+            });
         }
         
 
         TEST_METHOD(testSmartUsage_root) {
             auto results = subject.GetSmartUsage(subject.GetRoot().get(), source);
             AssertMap(results, {
-                {get("a"), "a (1|2)"},
-                {get("b"), "b 1"},
-                {get("c"), "c"},
-                {get("e"), "e [1]"},
-                {get("f"), "f (1|2)"},
-                {get("g"), "g [1]"},
-                {get("h"), "h [1|2|3]"},
-                {get("i"), "i [1|2]"},
-                {get("j"), "j ..."},
-                {get("k"), "k -> h"}
+                {get(L"a"), L"a (1|2)"},
+                {get(L"b"), L"b 1"},
+                {get(L"c"), L"c"},
+                {get(L"e"), L"e [1]"},
+                {get(L"f"), L"f (1|2)"},
+                {get(L"g"), L"g [1]"},
+                {get(L"h"), L"h [1|2|3]"},
+                {get(L"i"), L"i [1|2]"},
+                {get(L"j"), L"j ..."},
+                {get(L"k"), L"k -> h"}
                 });
         }
 
 
         TEST_METHOD(testSmartUsage_h) {
-            auto results = subject.GetSmartUsage(get("h"), source);
+            auto results = subject.GetSmartUsage(get(L"h"), source);
             AssertMap(results, {
-                {get("h 1"), "[1] i"},
-                {get("h 2"), "[2] i ii"},
-                {get("h 3"), "[3]"}
+                {get(L"h 1"), L"[1] i"},
+                {get(L"h 2"), L"[2] i ii"},
+                {get(L"h 3"), L"[3]"}
                 });
         }
 
 
         TEST_METHOD(testSmartUsage_offsetH) {
-            StringReader offsetH("/|/|/h");
+            WStringReader offsetH(L"/|/|/h");
             offsetH.SetCursor(5);
 
             auto results = subject.GetSmartUsage(get(offsetH), source);
             AssertMap(results, {
-                {get("h 1"), "[1] i"},
-                {get("h 2"), "[2] i ii"},
-                {get("h 3"), "[3]"}
+                {get(L"h 1"), L"[1] i"},
+                {get(L"h 2"), L"[2] i ii"},
+                {get(L"h 3"), L"[3]"}
                 });
         }
     };
@@ -449,11 +449,11 @@ namespace brigadier
     TEST_CLASS(CommandDispatcherSuggestionsTest)
     {
     private:
-        void testSuggestions(CommandDispatcher<int>& subject, std::string_view contents, int cursor, StringRange range, std::vector<std::string> suggestions = {}) {
+        void testSuggestions(WCommandDispatcher<int>& subject, std::wstring_view contents, size_t cursor, StringRange range, std::vector<std::wstring> suggestions = {}) {
             auto result = subject.GetCompletionSuggestions(subject.Parse(contents, source), cursor).get();
             AssertRange(result.GetRange(), range);
 
-            std::set<Suggestion, CompareNoCase> expected;
+            std::set<WSuggestion, CompareNoCase<wchar_t>> expected;
             for (auto& suggestion : suggestions) {
                 expected.emplace(range, suggestion);
             }
@@ -463,281 +463,281 @@ namespace brigadier
 
 
         TEST_METHOD(getCompletionSuggestions_rootCommands) {
-            CommandDispatcher<int> subject;
-            subject.Register<Literal>("foo");
-            subject.Register<Literal>("bar");
-            subject.Register<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            subject.Register<Literal>(L"foo");
+            subject.Register<Literal>(L"bar");
+            subject.Register<Literal>(L"baz");
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse("", source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(L"", source)).get();
 
             AssertRange(result.GetRange(), StringRange::At(0));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(0), "bar"), Suggestion(StringRange::At(0), "baz"), Suggestion(StringRange::At(0), "foo") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(0), L"bar"), WSuggestion(StringRange::At(0), L"baz"), WSuggestion(StringRange::At(0), L"foo") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_rootCommands_withInputOffset) {
-            CommandDispatcher<int> subject;
-            subject.Register<Literal>("foo");
-            subject.Register<Literal>("bar");
-            subject.Register<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            subject.Register<Literal>(L"foo");
+            subject.Register<Literal>(L"bar");
+            subject.Register<Literal>(L"baz");
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse(InputWithOffset("OOO", 3), source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(InputWithOffset(L"OOO", 3), source)).get();
 
             AssertRange(result.GetRange(), StringRange::At(3));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(3), "bar"), Suggestion(StringRange::At(3), "baz"), Suggestion(StringRange::At(3), "foo") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(3), L"bar"), WSuggestion(StringRange::At(3), L"baz"), WSuggestion(StringRange::At(3), L"foo") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_rootCommands_partial) {
-            CommandDispatcher<int> subject;
-            subject.Register<Literal>("foo");
-            subject.Register<Literal>("bar");
-            subject.Register<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            subject.Register<Literal>(L"foo");
+            subject.Register<Literal>(L"bar");
+            subject.Register<Literal>(L"baz");
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse("b", source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(L"b", source)).get();
 
             AssertRange(result.GetRange(), StringRange::Between(0, 1));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(0, 1), "bar"), Suggestion(StringRange::Between(0, 1), "baz") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(0, 1), L"bar"), WSuggestion(StringRange::Between(0, 1), L"baz") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_rootCommands_partial_withInputOffset) {
-            CommandDispatcher<int> subject;
-            subject.Register<Literal>("foo");
-            subject.Register<Literal>("bar");
-            subject.Register<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            subject.Register<Literal>(L"foo");
+            subject.Register<Literal>(L"bar");
+            subject.Register<Literal>(L"baz");
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse(InputWithOffset("Zb", 1), source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(InputWithOffset(L"Zb", 1), source)).get();
 
             AssertRange(result.GetRange(), StringRange::Between(1, 2));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(1, 2), "bar"), Suggestion(StringRange::Between(1, 2), "baz") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(1, 2), L"bar"), WSuggestion(StringRange::Between(1, 2), L"baz") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_subCommands) {
-            CommandDispatcher<int> subject;
-            auto parent = subject.Register("parent");
-            parent.Then<Literal>("foo");
-            parent.Then<Literal>("bar");
-            parent.Then<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            auto parent = subject.Register(L"parent");
+            parent.Then<Literal>(L"foo");
+            parent.Then<Literal>(L"bar");
+            parent.Then<Literal>(L"baz");
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse("parent ", source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(L"parent ", source)).get();
 
             AssertRange(result.GetRange(), StringRange::At(7));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(7), "bar"), Suggestion(StringRange::At(7), "baz"), Suggestion(StringRange::At(7), "foo") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(7), L"bar"), WSuggestion(StringRange::At(7), L"baz"), WSuggestion(StringRange::At(7), L"foo") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_movingCursor_subCommands) {
-            CommandDispatcher<int> subject;
-            auto p1 = subject.Register("parent_one");
-            p1.Then<Literal>("faz");
-            p1.Then<Literal>("fbz");
-            p1.Then<Literal>("gaz");
+            WCommandDispatcher<int> subject;
+            auto p1 = subject.Register(L"parent_one");
+            p1.Then<Literal>(L"faz");
+            p1.Then<Literal>(L"fbz");
+            p1.Then<Literal>(L"gaz");
 
-            subject.Register("parent_two");
+            subject.Register(L"parent_two");
 
-            testSuggestions(subject, "parent_one faz ", 0, StringRange::At(0), { "parent_one", "parent_two" });
-            testSuggestions(subject, "parent_one faz ", 1, StringRange::Between(0, 1), { "parent_one", "parent_two" });
-            testSuggestions(subject, "parent_one faz ", 7, StringRange::Between(0, 7), { "parent_one", "parent_two" });
-            testSuggestions(subject, "parent_one faz ", 8, StringRange::Between(0, 8), { "parent_one" });
-            testSuggestions(subject, "parent_one faz ", 10, StringRange::At(0), {});
-            testSuggestions(subject, "parent_one faz ", 11, StringRange::At(11), { "faz", "fbz", "gaz" });
-            testSuggestions(subject, "parent_one faz ", 12, StringRange::Between(11, 12), { "faz", "fbz" });
-            testSuggestions(subject, "parent_one faz ", 13, StringRange::Between(11, 13), { "faz" });
-            testSuggestions(subject, "parent_one faz ", 14, StringRange::At(0), {});
-            testSuggestions(subject, "parent_one faz ", 15, StringRange::At(0), {});
+            testSuggestions(subject, L"parent_one faz ", 0, StringRange::At(0), { L"parent_one", L"parent_two" });
+            testSuggestions(subject, L"parent_one faz ", 1, StringRange::Between(0, 1), { L"parent_one", L"parent_two" });
+            testSuggestions(subject, L"parent_one faz ", 7, StringRange::Between(0, 7), { L"parent_one", L"parent_two" });
+            testSuggestions(subject, L"parent_one faz ", 8, StringRange::Between(0, 8), { L"parent_one" });
+            testSuggestions(subject, L"parent_one faz ", 10, StringRange::At(0), {});
+            testSuggestions(subject, L"parent_one faz ", 11, StringRange::At(11), { L"faz", L"fbz", L"gaz" });
+            testSuggestions(subject, L"parent_one faz ", 12, StringRange::Between(11, 12), { L"faz", L"fbz" });
+            testSuggestions(subject, L"parent_one faz ", 13, StringRange::Between(11, 13), { L"faz" });
+            testSuggestions(subject, L"parent_one faz ", 14, StringRange::At(0), {});
+            testSuggestions(subject, L"parent_one faz ", 15, StringRange::At(0), {});
         }
         
 
         TEST_METHOD(getCompletionSuggestions_subCommands_partial) {
-            CommandDispatcher<int> subject;
-            auto parent = subject.Register("parent");
-            parent.Then<Literal>("foo");
-            parent.Then<Literal>("bar");
-            parent.Then<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            auto parent = subject.Register(L"parent");
+            parent.Then<Literal>(L"foo");
+            parent.Then<Literal>(L"bar");
+            parent.Then<Literal>(L"baz");
 
-            auto parse = subject.Parse("parent b", source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(L"parent b", source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::Between(7, 8));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(7, 8), "bar"), Suggestion(StringRange::Between(7, 8), "baz") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(7, 8), L"bar"), WSuggestion(StringRange::Between(7, 8), L"baz") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_subCommands_partial_withInputOffset) {
-            CommandDispatcher<int> subject;
-            auto parent = subject.Register("parent");
-            parent.Then<Literal>("foo");
-            parent.Then<Literal>("bar");
-            parent.Then<Literal>("baz");
+            WCommandDispatcher<int> subject;
+            auto parent = subject.Register(L"parent");
+            parent.Then<Literal>(L"foo");
+            parent.Then<Literal>(L"bar");
+            parent.Then<Literal>(L"baz");
             
 
-            auto parse = subject.Parse(InputWithOffset("junk parent b", 5), source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(InputWithOffset(L"junk parent b", 5), source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::Between(12, 13));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(12, 13), "bar"), Suggestion(StringRange::Between(12, 13), "baz") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(12, 13), L"bar"), WSuggestion(StringRange::Between(12, 13), L"baz") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_redirect) {
-            CommandDispatcher<int> subject;
-            auto actual = subject.Register<Literal>("actual");
-            actual.Then<Literal>("sub");
-            subject.Register<Literal>("redirect").Redirect(actual);
+            WCommandDispatcher<int> subject;
+            auto actual = subject.Register<Literal>(L"actual");
+            actual.Then<Literal>(L"sub");
+            subject.Register<Literal>(L"redirect").Redirect(actual);
 
-            auto parse = subject.Parse("redirect ", source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(L"redirect ", source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::At(9));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(9), "sub") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(9), L"sub") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_redirectPartial) {
-            CommandDispatcher<int> subject;
-            auto actual = subject.Register<Literal>("actual");
-            actual.Then<Literal>("sub");
-            subject.Register<Literal>("redirect").Redirect(actual);
+            WCommandDispatcher<int> subject;
+            auto actual = subject.Register<Literal>(L"actual");
+            actual.Then<Literal>(L"sub");
+            subject.Register<Literal>(L"redirect").Redirect(actual);
 
-            auto parse = subject.Parse("redirect s", source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(L"redirect s", source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::Between(9, 10));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(9, 10), "sub") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(9, 10), L"sub") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_movingCursor_redirect) {
-            CommandDispatcher<int> subject;
-            auto actualOne = subject.Register<Literal>("actual_one");
-            actualOne.Then<Literal>("faz");
-            actualOne.Then<Literal>("fbz");
-            actualOne.Then<Literal>("gaz");
+            WCommandDispatcher<int> subject;
+            auto actualOne = subject.Register<Literal>(L"actual_one");
+            actualOne.Then<Literal>(L"faz");
+            actualOne.Then<Literal>(L"fbz");
+            actualOne.Then<Literal>(L"gaz");
 
-            auto actualTwo = subject.Register<Literal>("actual_two");
+            auto actualTwo = subject.Register<Literal>(L"actual_two");
 
-            subject.Register<Literal>("redirect_one").Redirect(actualOne);
-            subject.Register<Literal>("redirect_two").Redirect(actualOne);
+            subject.Register<Literal>(L"redirect_one").Redirect(actualOne);
+            subject.Register<Literal>(L"redirect_two").Redirect(actualOne);
 
-            testSuggestions(subject, "redirect_one faz ", 0, StringRange::At(0), { "actual_one", "actual_two", "redirect_one", "redirect_two" });
-            testSuggestions(subject, "redirect_one faz ", 9, StringRange::Between(0, 9), { "redirect_one", "redirect_two" });
-            testSuggestions(subject, "redirect_one faz ", 10, StringRange::Between(0, 10), { "redirect_one" });
-            testSuggestions(subject, "redirect_one faz ", 12, StringRange::At(0));
-            testSuggestions(subject, "redirect_one faz ", 13, StringRange::At(13), { "faz", "fbz", "gaz" });
-            testSuggestions(subject, "redirect_one faz ", 14, StringRange::Between(13, 14), { "faz", "fbz" });
-            testSuggestions(subject, "redirect_one faz ", 15, StringRange::Between(13, 15), { "faz" });
-            testSuggestions(subject, "redirect_one faz ", 16, StringRange::At(0));
-            testSuggestions(subject, "redirect_one faz ", 17, StringRange::At(0));
+            testSuggestions(subject, L"redirect_one faz ", 0, StringRange::At(0), { L"actual_one", L"actual_two", L"redirect_one", L"redirect_two" });
+            testSuggestions(subject, L"redirect_one faz ", 9, StringRange::Between(0, 9), { L"redirect_one", L"redirect_two" });
+            testSuggestions(subject, L"redirect_one faz ", 10, StringRange::Between(0, 10), { L"redirect_one" });
+            testSuggestions(subject, L"redirect_one faz ", 12, StringRange::At(0));
+            testSuggestions(subject, L"redirect_one faz ", 13, StringRange::At(13), { L"faz", L"fbz", L"gaz" });
+            testSuggestions(subject, L"redirect_one faz ", 14, StringRange::Between(13, 14), { L"faz", L"fbz" });
+            testSuggestions(subject, L"redirect_one faz ", 15, StringRange::Between(13, 15), { L"faz" });
+            testSuggestions(subject, L"redirect_one faz ", 16, StringRange::At(0));
+            testSuggestions(subject, L"redirect_one faz ", 17, StringRange::At(0));
         }
 
 
         TEST_METHOD(getCompletionSuggestions_redirectPartial_withInputOffset) {
-            CommandDispatcher<int> subject;
-            auto actual = subject.Register<Literal>("actual");
-            actual.Then<Literal>("sub");
-            subject.Register<Literal>("redirect").Redirect(actual);
+            WCommandDispatcher<int> subject;
+            auto actual = subject.Register<Literal>(L"actual");
+            actual.Then<Literal>(L"sub");
+            subject.Register<Literal>(L"redirect").Redirect(actual);
 
-            auto parse = subject.Parse(InputWithOffset("/redirect s", 1), source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(InputWithOffset(L"/redirect s", 1), source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::Between(10, 11));
-            AssertSet(result.GetList(), { Suggestion(StringRange::Between(10, 11), "sub") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::Between(10, 11), L"sub") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_redirect_lots) {
-            CommandDispatcher<int> subject;
-            auto loop = subject.Register<Literal>("redirect");
-            loop.Then<Literal>("loop").Then<Argument, Integer>("loop").Redirect(loop);
+            WCommandDispatcher<int> subject;
+            auto loop = subject.Register<Literal>(L"redirect");
+            loop.Then<Literal>(L"loop").Then<Argument, Integer>(L"loop").Redirect(loop);
 
-            Suggestions result = subject.GetCompletionSuggestions(subject.Parse("redirect loop 1 loop 02 loop 003 ", source)).get();
+            WSuggestions result = subject.GetCompletionSuggestions(subject.Parse(L"redirect loop 1 loop 02 loop 003 ", source)).get();
 
             AssertRange(result.GetRange(), StringRange::At(33));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(33), "loop") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(33), L"loop") });
         }
 
 
         TEST_METHOD(getCompletionSuggestions_execute_simulation) {
-            CommandDispatcher<int> subject;
-            auto execute = subject.Register<Literal>("execute");
-            execute.Then<Literal>("as").Then<Argument, Word>("name").Redirect(execute);
-            execute.Then<Literal>("store").Then<Argument, Word>("name").Redirect(execute);
-            execute.Then<Literal>("run").Executes(command);
+            WCommandDispatcher<int> subject;
+            auto execute = subject.Register<Literal>(L"execute");
+            execute.Then<Literal>(L"as").Then<Argument, Word>(L"name").Redirect(execute);
+            execute.Then<Literal>(L"store").Then<Argument, Word>(L"name").Redirect(execute);
+            execute.Then<Literal>(L"run").Executes(command);
 
-            auto parse = subject.Parse("execute as Dinnerbone as", source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(L"execute as Dinnerbone as", source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             Assert::AreEqual(result.IsEmpty(), true);
         }
 
 
         TEST_METHOD(getCompletionSuggestions_execute_simulation_partial) {
-            CommandDispatcher<int> subject;
-            auto execute = subject.Register<Literal>("execute");
-            auto as = execute.Then<Literal>("as");
-            as.Then<Literal>("bar").Redirect(execute);
-            as.Then<Literal>("baz").Redirect(execute);
-            execute.Then<Literal>("store").Then<Argument, Word>("name").Redirect(execute);
-            execute.Then<Literal>("run").Executes(command);
+            WCommandDispatcher<int> subject;
+            auto execute = subject.Register<Literal>(L"execute");
+            auto as = execute.Then<Literal>(L"as");
+            as.Then<Literal>(L"bar").Redirect(execute);
+            as.Then<Literal>(L"baz").Redirect(execute);
+            execute.Then<Literal>(L"store").Then<Argument, Word>(L"name").Redirect(execute);
+            execute.Then<Literal>(L"run").Executes(command);
 
-            auto parse = subject.Parse("execute as bar as ", source);
-            Suggestions result = subject.GetCompletionSuggestions(parse).get();
+            auto parse = subject.Parse(L"execute as bar as ", source);
+            WSuggestions result = subject.GetCompletionSuggestions(parse).get();
 
             AssertRange(result.GetRange(), StringRange::At(18));
-            AssertSet(result.GetList(), { Suggestion(StringRange::At(18), "bar"), Suggestion(StringRange::At(18), "baz") });
+            AssertSet(result.GetList(), { WSuggestion(StringRange::At(18), L"bar"), WSuggestion(StringRange::At(18), L"baz") });
         }
     };
 
     // Benchmarks
     TEST_CLASS(ParseBenchmarks)
     {
-        CommandDispatcher<int> subject;
+        WCommandDispatcher<int> subject;
 
         TEST_METHOD_INITIALIZE(init)
         {
-            auto a = subject.Register("a");
+            auto a = subject.Register(L"a");
 
-            auto a1 = a.Then<Literal>("1");
-            a1.Then<Literal>("i").Executes(command);
-            a1.Then<Literal>("ii").Executes(command);
+            auto a1 = a.Then<Literal>(L"1");
+            a1.Then<Literal>(L"i").Executes(command);
+            a1.Then<Literal>(L"ii").Executes(command);
 
-            auto a2 = a.Then<Literal>("2");
-            a2.Then<Literal>("i").Executes(command);
-            a2.Then<Literal>("ii").Executes(command);
+            auto a2 = a.Then<Literal>(L"2");
+            a2.Then<Literal>(L"i").Executes(command);
+            a2.Then<Literal>(L"ii").Executes(command);
 
-            subject.Register("b").Then<Literal>("1").Executes(command);
+            subject.Register(L"b").Then<Literal>(L"1").Executes(command);
 
-            subject.Register("c").Executes(command);
+            subject.Register(L"c").Executes(command);
 
-            subject.Register("d").Requires([](int&) -> bool { return false; }).Executes(command);
+            subject.Register(L"d").Requires([](int&) -> bool { return false; }).Executes(command);
 
-            auto& e1 = subject.Register("e").Executes(command).Then<Literal>("1").Executes(command);
-            e1.Then<Literal>("i").Executes(command);
-            e1.Then<Literal>("ii").Executes(command);
+            auto& e1 = subject.Register(L"e").Executes(command).Then<Literal>(L"1").Executes(command);
+            e1.Then<Literal>(L"i").Executes(command);
+            e1.Then<Literal>(L"ii").Executes(command);
 
-            auto f = subject.Register("f");
-            auto f1 = f.Then<Literal>("1");
-            f1.Then<Literal>("i").Executes(command);
-            f1.Then<Literal>("ii").Executes(command).Requires([](int&) -> bool { return false; });
-            auto f2 = f.Then<Literal>("2");
-            f2.Then<Literal>("i").Executes(command).Requires([](int&) -> bool { return false; });
-            f2.Then<Literal>("ii").Executes(command);
+            auto f = subject.Register(L"f");
+            auto f1 = f.Then<Literal>(L"1");
+            f1.Then<Literal>(L"i").Executes(command);
+            f1.Then<Literal>(L"ii").Executes(command).Requires([](int&) -> bool { return false; });
+            auto f2 = f.Then<Literal>(L"2");
+            f2.Then<Literal>(L"i").Executes(command).Requires([](int&) -> bool { return false; });
+            f2.Then<Literal>(L"ii").Executes(command);
 
-            subject.Register("g").Executes(command).Then<Literal>("1").Then<Literal>("i").Executes(command);
+            subject.Register(L"g").Executes(command).Then<Literal>(L"1").Then<Literal>(L"i").Executes(command);
 
-            auto& h = subject.Register("h").Executes(command);
-            h.Then<Literal>("1").Then<Literal>("i").Executes(command);
-            h.Then<Literal>("2").Then<Literal>("i").Then<Literal>("ii").Executes(command);
-            h.Then<Literal>("3").Executes(command);
+            auto& h = subject.Register(L"h").Executes(command);
+            h.Then<Literal>(L"1").Then<Literal>(L"i").Executes(command);
+            h.Then<Literal>(L"2").Then<Literal>(L"i").Then<Literal>(L"ii").Executes(command);
+            h.Then<Literal>(L"3").Executes(command);
 
-            auto& i = subject.Register("i").Executes(command);
-            i.Then<Literal>("1").Executes(command);
-            i.Then<Literal>("2").Executes(command);
+            auto& i = subject.Register(L"i").Executes(command);
+            i.Then<Literal>(L"1").Executes(command);
+            i.Then<Literal>(L"2").Executes(command);
 
-            subject.Register("j").Redirect(subject.GetRoot());
-            subject.Register("k").Redirect(h);
+            subject.Register(L"j").Redirect(subject.GetRoot());
+            subject.Register(L"k").Redirect(h);
         }
 
         TEST_METHOD_CLEANUP(cleanup)
@@ -747,38 +747,38 @@ namespace brigadier
 
         
         TEST_METHOD(parse_a1i) {
-            for (int i = 0; i < 1000000; i++)
-                subject.Parse("a 1 i", source);
+            for (int i = 0; i < 10000; i++)
+                subject.Parse(L"a 1 i", source);
         }
 
         
         TEST_METHOD(parse_c) {
-            for (int i = 0; i < 1000000; i++)
-                subject.Parse("c", source);
+            for (int i = 0; i < 10000; i++)
+                subject.Parse(L"c", source);
         }
 
         
         TEST_METHOD(parse_k1i) {
-            for (int i = 0; i < 1000000; i++)
-                subject.Parse("k 1 i", source);
+            for (int i = 0; i < 10000; i++)
+                subject.Parse(L"k 1 i", source);
         }
     };
 
     TEST_CLASS(ExecuteBenchmarks)
     {
-        CommandDispatcher<int> dispatcher;
-        std::optional<ParseResults<int>> simple;
-        std::optional<ParseResults<int>> singleRedirect;
-        std::optional<ParseResults<int>> forkedRedirect;
+        WCommandDispatcher<int> dispatcher;
+        std::optional<WParseResults<int>> simple;
+        std::optional<WParseResults<int>> singleRedirect;
+        std::optional<WParseResults<int>> forkedRedirect;
 
         TEST_METHOD_INITIALIZE(setup)
         {
-            dispatcher.Register("command").Executes(command);
-            dispatcher.Register("redirect").Redirect(dispatcher.GetRoot());
-            dispatcher.Register("fork").Fork(dispatcher.GetRoot(), [](CommandContext<int>& ctx) -> std::vector<int> { return { 1, 2, 3 }; });
-            simple = dispatcher.Parse("command", source);
-            singleRedirect = dispatcher.Parse("redirect command", source);
-            forkedRedirect = dispatcher.Parse("fork command", source);
+            dispatcher.Register(L"command").Executes(command);
+            dispatcher.Register(L"redirect").Redirect(dispatcher.GetRoot());
+            dispatcher.Register(L"fork").Fork(dispatcher.GetRoot(), [](WCommandContext<int>& ctx) -> std::vector<int> { return { 1, 2, 3 }; });
+            simple = dispatcher.Parse(L"command", source);
+            singleRedirect = dispatcher.Parse(L"redirect command", source);
+            forkedRedirect = dispatcher.Parse(L"fork command", source);
         }
 
         TEST_METHOD_CLEANUP(cleanup)
@@ -790,17 +790,17 @@ namespace brigadier
         }
 
         TEST_METHOD(execute_simple) {
-            for (int i = 0; i < 1000000; i++)
+            for (int i = 0; i < 10000; i++)
                 dispatcher.Execute(*simple);
         }
 
         TEST_METHOD(execute_single_redirect) {
-            for (int i = 0; i < 1000000; i++)
+            for (int i = 0; i < 10000; i++)
                 dispatcher.Execute(*singleRedirect);
         }
 
         TEST_METHOD(execute_forked_redirect) {
-            for (int i = 0; i < 1000000; i++)
+            for (int i = 0; i < 10000; i++)
                 dispatcher.Execute(*forkedRedirect);
         }
     };
@@ -823,21 +823,21 @@ namespace brigadier
         {
             using Src = CopyGuard;
 
-            CommandDispatcher<Src> dispatcher;
+            WCommandDispatcher<Src> dispatcher;
 
-            auto foo = dispatcher.Register<Literal>("foo");
-            foo.Then<Argument, Integer>("bar").Executes([](CommandContext<Src>& ctx) {
-                printf("Bar is %d\n", ctx.GetArgument<Integer>("bar"));
+            auto foo = dispatcher.Register<Literal>(L"foo");
+            foo.Then<Argument, Integer>(L"bar").Executes([](WCommandContext<Src>& ctx) {
+                printf("Bar is %d\n", ctx.GetArgument<Integer>(L"bar"));
                 return 1;
-                });
-            foo.Executes([](CommandContext<Src>& ctx) {
+            });
+            foo.Executes([](WCommandContext<Src>& ctx) {
                 puts("Called foo without arguments");
                 return 1;
-                });
+            });
 
-            dispatcher.Execute("foo 1", {});
+            dispatcher.Execute(L"foo 1", {});
 
-            printf("%d copies, %d moves", copies, moves);
+            Logger::WriteMessage((std::stringstream{} << copies << " copies, " << moves << " moves").str().c_str());
         }
     };
 }

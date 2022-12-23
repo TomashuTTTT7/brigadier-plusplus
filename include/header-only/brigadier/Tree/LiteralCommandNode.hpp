@@ -13,13 +13,13 @@ namespace brigadier
             , literal(literal)
             , literalLowerCase(literal)
         {
-            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](char c) { return std::tolower(c); });
+            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
         BasicLiteralCommandNode(std::basic_string_view<CharT> literal)
             : literal(literal)
             , literalLowerCase(literal)
         {
-            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](char c) { return std::tolower(c); });
+            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
         virtual ~BasicLiteralCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { return literal; }
@@ -27,10 +27,10 @@ namespace brigadier
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return { literal }; }
         virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder)
         {
-            int start = reader.GetCursor();
-            int end = Parse(reader);
-            if (end > -1) {
-                contextBuilder.WithNode(this, BasicStringRange<CharT>::Between(start, end));
+            size_t start = reader.GetCursor();
+            size_t end = Parse(reader);
+            if (end != size_t(-1)) {
+                contextBuilder.WithNode(this, StringRange::Between(start, end));
                 return;
             }
 
@@ -47,18 +47,18 @@ namespace brigadier
     protected:
         virtual bool IsValidInput(std::basic_string_view<CharT> input) {
             BasicStringReader<CharT> reader(input);
-            return Parse(reader) > -1;
+            return Parse(reader) != size_t(-1);
         }
         virtual std::basic_string_view<CharT> GetSortedKey() { return literal; }
     private:
-        int Parse(BasicStringReader<CharT>& reader)
+        size_t Parse(BasicStringReader<CharT>& reader)
         {
-            int start = reader.GetCursor();
+            size_t start = reader.GetCursor();
             if (reader.CanRead(literal.length())) {
                 if (reader.GetString().substr(start, literal.length()) == literal) {
-                    int end = start + literal.length();
+                    size_t end = start + literal.length();
                     reader.SetCursor(end);
-                    if (!reader.CanRead() || reader.Peek() == ' ') {
+                    if (!reader.CanRead() || reader.Peek() == CharT(' ')) {
                         return end;
                     }
                     else {
@@ -66,7 +66,7 @@ namespace brigadier
                     }
                 }
             }
-            return -1;
+            return size_t(-1);
         }
     private:
         std::basic_string<CharT> literal;

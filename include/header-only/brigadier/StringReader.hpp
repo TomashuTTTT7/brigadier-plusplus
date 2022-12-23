@@ -16,7 +16,7 @@ namespace brigadier
         base::pos_type seekoff(base::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
         {
             if (dir == std::ios_base::cur)
-                this->gbump(off);
+                this->gbump((int)off);
             else if (dir == std::ios_base::end)
                 this->setg(this->eback(), this->egptr() + off, this->egptr());
             else if (dir == std::ios_base::beg)
@@ -78,11 +78,11 @@ namespace brigadier
         }
     public:
         inline std::basic_string_view<CharT> ReadUnquotedString();
-        inline std::basic_string_view<CharT> ReadUnquotedStringUntil(CharT terminator);
-        inline std::basic_string_view<CharT> ReadUnquotedStringUntilOneOf(CharT const* terminators);
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntil(CharT terminator); // Terminator is skipped
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntilOneOf(CharT const* terminators); // Terminator is skipped
         inline std::basic_string<CharT>      ReadString();
-        inline std::basic_string<CharT>      ReadStringUntil(CharT terminator);
-        inline std::basic_string<CharT>      ReadStringUntilOneOf(CharT const* terminators);
+        inline std::basic_string<CharT>      ReadStringUntil(CharT terminator); // Terminator is skipped
+        inline std::basic_string<CharT>      ReadStringUntilOneOf(CharT const* terminators); // Terminator is skipped
         inline std::basic_string<CharT>      ReadQuotedString();
         inline void                          Expect(CharT c);
     private:
@@ -99,11 +99,11 @@ namespace brigadier
                 || (c == CharT('_') || c == CharT('-'))
                 || (c == CharT('.') || c == CharT('+'));
         }
-        inline static bool IsQuotedStringStart(char c) {
+        inline static bool IsQuotedStringStart(CharT c) {
             return c == SYNTAX_DOUBLE_QUOTE || c == SYNTAX_SINGLE_QUOTE;
         }
         template<bool allow_float = true, bool allow_negative = true>
-        inline static bool IsAllowedNumber(char c) {
+        inline static bool IsAllowedNumber(CharT c) {
             return c >= CharT('0') && c <= CharT('9') || (allow_float && c == CharT('.')) || (allow_negative && c == CharT('-'));
         }
     private:
@@ -120,7 +120,7 @@ namespace brigadier
     template<typename CharT>
     std::basic_string_view<CharT> BasicStringReader<CharT>::ReadUnquotedString()
     {
-        int start = cursor;
+        size_t start = cursor;
         while (CanRead() && IsAllowedInUnquotedString(Peek())) {
             Skip();
         }
@@ -136,7 +136,7 @@ namespace brigadier
             if (!IsAllowedInUnquotedString(c))
                 break;
             if (c == terminator)
-                break;
+                return string.substr(start, (cursor++) - start);
             Skip();
         }
         return string.substr(start, cursor - start);
@@ -152,7 +152,7 @@ namespace brigadier
                 break;
             for (CharT const* t = terminators; *t != 0; t++) {
                 if (c == *t) {
-                    return string.substr(start, cursor - start);
+                    return string.substr(start, (cursor++) - start);
                 }
             }
             Skip();
@@ -166,7 +166,7 @@ namespace brigadier
         if (!CanRead()) {
             return {};
         }
-        char next = Peek();
+        CharT next = Peek();
         if (IsQuotedStringStart(next)) {
             Skip();
             return ReadStringUntil(next);
@@ -182,7 +182,7 @@ namespace brigadier
 
         bool escaped = false;
         while (CanRead()) {
-            char c = Read();
+            CharT c = Read();
             if (escaped) {
                 if (c == terminator || c == SYNTAX_ESCAPE) {
                     result += c;
@@ -220,19 +220,17 @@ namespace brigadier
 
         bool escaped = false;
         while (CanRead()) {
-            char c = Read();
+            CharT c = Read();
             if (escaped) {
                 if (c == SYNTAX_ESCAPE) {
                     result += c;
                     escaped = false;
                 }
-                if (escaped) {
-                    for (const char* t = terminators; *t != 0; t++) {
-                        if (c == *t) {
-                            result += c;
-                            escaped = false;
-                            break;
-                        }
+                else for (CharT const* t = terminators; *t != 0; t++) {
+                    if (c == *t) {
+                        result += c;
+                        escaped = false;
+                        break;
                     }
                 }
                 if (escaped) {
@@ -244,7 +242,7 @@ namespace brigadier
                 escaped = true;
             }
             else {
-                for (const char* t = terminators; *t != 0; t++) {
+                for (CharT const* t = terminators; *t != 0; t++) {
                     if (c == *t) {
                         return result;
                     }
@@ -262,7 +260,7 @@ namespace brigadier
         if (!CanRead()) {
             return {};
         }
-        char next = Peek();
+        CharT next = Peek();
         if (!IsQuotedStringStart(next)) {
             throw exceptions::ReaderExpectedStartOfQuote(*this);
         }
@@ -289,9 +287,9 @@ namespace brigadier
 
         if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>)
         {
-            /**/ if (value == "true")
+            /**/ if (value == BRIGADIER_LITERAL(CharT, "true"))
                 return true;
-            else if (value == "false")
+            else if (value == BRIGADIER_LITERAL(CharT, "false"))
                 return false;
             else {
                 cursor = start;
@@ -326,19 +324,19 @@ namespace brigadier
 
         if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
         {
-            while (CanRead() && is_allowed_number<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
+            while (CanRead() && IsAllowedNumber<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
                 Skip();
             }
-            return ParseValue<T>(string.substr(start, cursor - start));
+            return ParseValue<T>(string.substr(start, cursor - start), start);
         }
         else
         {
-            char next = Peek();
+            CharT next = Peek();
             if (IsQuotedStringStart(next)) {
                 Skip();
-                return ParseValue<T>(ReadStringUntil(next));
+                return ParseValue<T>(ReadStringUntil(next), start);
             }
-            return ParseValue<T>(ReadUnquotedString());
+            return ParseValue<T>(ReadUnquotedString(), start);
         }
     }
 }

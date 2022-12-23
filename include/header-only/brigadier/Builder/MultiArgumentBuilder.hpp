@@ -18,12 +18,16 @@ namespace brigadier
 
         inline B* GetThis() { return this; }
 
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto Then(Args&&... args) {
+            return Then<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next, typename Type = void, typename... Args>
         auto Then(Args&&... args)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
 
@@ -37,13 +41,13 @@ namespace brigadier
                 return Next<CharT, S>(std::move(new_node));
             }
             else {
-                using next_node = typename Next<S, Type>::node_type;
+                using next_node = typename Next<CharT, S, Type>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto new_node = std::make_shared<next_node>(std::move(node_builder));
                 for (auto& node : nodes) {
                     node->AddChild(new_node);
                 }
-                return Next<S, Type>(std::move(new_node));
+                return Next<CharT, S, Type>(std::move(new_node));
             }
         }
 
@@ -51,7 +55,7 @@ namespace brigadier
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -67,7 +71,7 @@ namespace brigadier
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -129,7 +133,7 @@ namespace brigadier
                     auto& node = nodes[i];
                     if (node->GetChildren().size() > 0)
                     {
-                        throw std::runtime_error("Cannot forward a node with children");
+                        throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot forward a node with children");
                     }
                 }
             }

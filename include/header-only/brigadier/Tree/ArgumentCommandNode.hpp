@@ -35,8 +35,8 @@ namespace brigadier
     class BasicArgumentCommandNode : public BasicIArgumentCommandNode<CharT, S>
     {
     private:
-        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_OPEN = "<";
-        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_CLOSE = ">";
+        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_OPEN = BRIGADIER_LITERAL(CharT, "<");
+        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_CLOSE = BRIGADIER_LITERAL(CharT, ">");
     public:
         template<typename... Args>
         BasicArgumentCommandNode(std::basic_string_view<CharT> name, Args&&... args)
@@ -61,7 +61,7 @@ namespace brigadier
             if constexpr (typeName.size() > 0)
             {
                 ret += typeName;
-                ret += ": ";
+                ret += BRIGADIER_LITERAL(CharT, ": ");
             }
             ret += this->name;
             ret += USAGE_ARGUMENT_CLOSE;
@@ -71,10 +71,10 @@ namespace brigadier
             return type.GetExamples();
         }
         virtual void Parse(BasicStringReader<CharT>& reader, BasicCommandContext<CharT, S>& contextBuilder) {
-            int start = reader.GetCursor();
+            size_t start = reader.GetCursor();
             using Type = typename T::type;
             Type result = type.Parse(reader);
-            std::shared_ptr<BasicParsedArgument<S, T>> parsed = std::make_shared<BasicParsedArgument<S, T>>(start, reader.GetCursor(), std::move(result));
+            std::shared_ptr<BasicParsedArgument<CharT, S, T>> parsed = std::make_shared<BasicParsedArgument<CharT, S, T>>(start, reader.GetCursor(), std::move(result));
 
             contextBuilder.WithArgument(this->name, parsed);
             contextBuilder.WithNode(this, parsed->GetRange());
@@ -82,7 +82,7 @@ namespace brigadier
         virtual std::future<BasicSuggestions<CharT>> ListSuggestions(BasicCommandContext<CharT, S>& context, BasicSuggestionsBuilder<CharT>& builder)
         {
             if (customSuggestions == nullptr) {
-                return type.template ListSuggestions<CharT, S>(context, builder);
+                return type.template ListSuggestions<S>(context, builder);
             }
             else {
                 return customSuggestions(context, builder);

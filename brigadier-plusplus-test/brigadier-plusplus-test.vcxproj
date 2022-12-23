@@ -157,7 +157,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="brigadier_header_only_test.cpp" />
-    <ClCompile Include="brigadier_single_header_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="brigadier\Arguments\ArgumentType.hpp" />

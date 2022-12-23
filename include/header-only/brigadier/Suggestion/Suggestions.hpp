@@ -14,10 +14,10 @@ namespace brigadier
     class BasicSuggestions
     {
     public:
-        BasicSuggestions(BasicStringRange<CharT> range, std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
-        BasicSuggestions() : BasicSuggestions<CharT>(BasicStringRange<CharT>::At(0), {}) {}
+        BasicSuggestions(StringRange range, std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
+        BasicSuggestions() : BasicSuggestions<CharT>(StringRange::At(0), {}) {}
 
-        inline BasicStringRange<CharT> GetRange() const { return range; }
+        inline StringRange GetRange() const { return range; }
         inline std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
         inline bool IsEmpty() { return suggestions.empty(); }
 
@@ -43,29 +43,29 @@ namespace brigadier
         }
         static inline BasicSuggestions<CharT> Create(std::basic_string_view<CharT> command, std::vector<BasicSuggestion<CharT>>& suggestions, bool* cancel = nullptr)
         {
-            if (suggestions.empty()) return {};
-            int start = std::numeric_limits<int>::max();
-            int end = std::numeric_limits<int>::min();
+            BasicSuggestions<CharT> ret;
+            if (suggestions.empty()) return ret;
+            size_t start = std::numeric_limits<size_t>::max();
+            size_t end = std::numeric_limits<size_t>::min();
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return {};
+                if (cancel && *cancel) return ret;
                 start = (std::min)(suggestion.GetRange().GetStart(), start);
                 end = (std::max)(suggestion.GetRange().GetEnd(), end);
             }
-            std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggest;
-            BasicStringRange<CharT> range = BasicStringRange<CharT>(start, end);
+            ret.range = StringRange(start, end);
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return {}; // BasicSuggestions<CharT>(range, std::move(suggest));
-                suggestion.Expand(command, range);
+                if (cancel && *cancel) return ret;
+                suggestion.Expand(command, ret.range);
             }
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return BasicSuggestions<CharT>(range, std::move(suggest));
-                suggest.insert(std::move(suggestion));
+                if (cancel && *cancel) return ret;
+                ret.suggestions.insert(std::move(suggestion));
             }
-            return BasicSuggestions<CharT>(range, std::move(suggest));
+            return ret;
         }
     private:
-        BasicStringRange<CharT> range;
+        StringRange range;
         std::set<BasicSuggestion<CharT>, CompareNoCase<CharT>> suggestions;
     };
-    BRIGADIER_SPECIALIZE_BASIC_TEMPL(Suggestions);
+    BRIGADIER_SPECIALIZE_BASIC(Suggestions);
 }

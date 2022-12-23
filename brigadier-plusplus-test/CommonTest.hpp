@@ -44,13 +44,13 @@ namespace brigadier
         }
     }
 
-    inline StringReader InputWithOffset(std::string_view input, int offset) {
-        StringReader result(input);
+    inline WStringReader InputWithOffset(std::wstring_view input, size_t offset) {
+        WStringReader result(input);
         result.SetCursor(offset);
         return result;
     }
 
-    inline void AssertSuggestion(Suggestion const& a, Suggestion const& b)
+    inline void AssertSuggestion(WSuggestion const& a, WSuggestion const& b)
     {
         Assert::AreEqual(a.GetText(), b.GetText());
         Assert::AreEqual(a.GetTooltip(), b.GetTooltip());

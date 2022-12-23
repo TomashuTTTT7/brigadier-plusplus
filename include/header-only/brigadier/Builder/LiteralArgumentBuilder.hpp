@@ -8,7 +8,7 @@ namespace brigadier
     class BasicLiteralArgumentBuilder : public BasicArgumentBuilder<CharT, S, BasicLiteralArgumentBuilder<CharT, S>, BasicLiteralCommandNode<CharT, S>>
     {
     public:
-        BasicLiteralArgumentBuilder(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> node) : BasicArgumentBuilder<S, BasicLiteralArgumentBuilder<CharT, S>, BasicLiteralCommandNode<CharT, S>>(std::move(node)) {}
+        BasicLiteralArgumentBuilder(std::shared_ptr<BasicLiteralCommandNode<CharT, S>> node) : BasicArgumentBuilder<CharT, S, BasicLiteralArgumentBuilder<CharT, S>, BasicLiteralCommandNode<CharT, S>>(std::move(node)) {}
     };
     BRIGADIER_REGISTER_ARGTYPE_TEMPL(BasicLiteralArgumentBuilder, Literal);
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(LiteralArgumentBuilder);

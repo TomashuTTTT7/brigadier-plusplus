@@ -6,18 +6,18 @@ namespace brigadier
     TEST_CLASS(StringReaderTest)
     {
         TEST_METHOD(CanRead) {
-            StringReader reader("abc");
+            WStringReader reader(L"abc");
             Assert::AreEqual(reader.CanRead(), { true });
-            reader.Skip(); // 'a'
+            reader.Skip(); // L'a'
             Assert::AreEqual(reader.CanRead(), { true });
-            reader.Skip(); // 'b'
+            reader.Skip(); // L'b'
             Assert::AreEqual(reader.CanRead(), { true });
-            reader.Skip(); // 'c'
+            reader.Skip(); // L'c'
             Assert::AreEqual(reader.CanRead(), { false });
         }
         
         TEST_METHOD(GetRemainingLength) {
-            StringReader reader("abc");
+            WStringReader reader(L"abc");
             Assert::AreEqual(reader.GetRemainingLength(), { 3 });
             reader.SetCursor(1);
             Assert::AreEqual(reader.GetRemainingLength(), { 2 });
@@ -28,7 +28,7 @@ namespace brigadier
         }
 
         TEST_METHOD(CanRead_length) {
-            StringReader reader("abc");
+            WStringReader reader(L"abc");
             Assert::AreEqual(reader.CanRead(1), { true });
             Assert::AreEqual(reader.CanRead(2), { true });
             Assert::AreEqual(reader.CanRead(3), { true });
@@ -37,480 +37,567 @@ namespace brigadier
         }
 
         TEST_METHOD(Peek) {
-            StringReader reader("abc");
-            Assert::AreEqual(reader.Peek(), 'a');
-            Assert::AreEqual(reader.GetCursor(), 0);
+            WStringReader reader(L"abc");
+            Assert::AreEqual(reader.Peek(), L'a');
+            Assert::AreEqual<size_t>(reader.GetCursor(), 0);
             reader.SetCursor(2);
-            Assert::AreEqual(reader.Peek(), 'c');
-            Assert::AreEqual(reader.GetCursor(), 2);
+            Assert::AreEqual(reader.Peek(), L'c');
+            Assert::AreEqual<size_t>(reader.GetCursor(), 2);
         }
 
         TEST_METHOD(Peek_length) {
-            StringReader reader("abc");
-            Assert::AreEqual(reader.Peek(0), 'a');
-            Assert::AreEqual(reader.Peek(2), 'c');
-            Assert::AreEqual(reader.GetCursor(), 0);
+            WStringReader reader(L"abc");
+            Assert::AreEqual(reader.Peek(0), L'a');
+            Assert::AreEqual(reader.Peek(2), L'c');
+            Assert::AreEqual<size_t>(reader.GetCursor(), 0);
             reader.SetCursor(1);
-            Assert::AreEqual(reader.Peek(1), 'c');
-            Assert::AreEqual(reader.GetCursor(), 1);
+            Assert::AreEqual(reader.Peek(1), L'c');
+            Assert::AreEqual<size_t>(reader.GetCursor(), 1);
         }
 
         TEST_METHOD(Read) {
-            StringReader reader("abc");
-            Assert::AreEqual(reader.Read(), 'a');
-            Assert::AreEqual(reader.Read(), 'b');
-            Assert::AreEqual(reader.Read(), 'c');
-            Assert::AreEqual(reader.GetCursor(), 3);
+            WStringReader reader(L"abc");
+            Assert::AreEqual(reader.Read(), L'a');
+            Assert::AreEqual(reader.Read(), L'b');
+            Assert::AreEqual(reader.Read(), L'c');
+            Assert::AreEqual<size_t>(reader.GetCursor(), 3);
         }
 
         TEST_METHOD(Skip) {
-            StringReader reader("abc");
+            WStringReader reader(L"abc");
             reader.Skip();
-            Assert::AreEqual(reader.GetCursor(), 1);
+            Assert::AreEqual<size_t>(reader.GetCursor(), 1);
         }
 
         TEST_METHOD(GetRemaining) {
-            StringReader reader("Hello!");
-            Assert::AreEqual(reader.GetRemaining(), { "Hello!" });
+            WStringReader reader(L"Hello!");
+            Assert::AreEqual(reader.GetRemaining(), { L"Hello!" });
             reader.SetCursor(3);
-            Assert::AreEqual(reader.GetRemaining(), { "lo!" });
+            Assert::AreEqual(reader.GetRemaining(), { L"lo!" });
             reader.SetCursor(6);
-            Assert::AreEqual(reader.GetRemaining(), { "" });
+            Assert::AreEqual(reader.GetRemaining(), { L"" });
         }
         
         TEST_METHOD(GetRead) {
-            StringReader reader("Hello!");
-            Assert::AreEqual(reader.GetRead(), { "" });
+            WStringReader reader(L"Hello!");
+            Assert::AreEqual(reader.GetRead(), { L"" });
             reader.SetCursor(3);
-            Assert::AreEqual(reader.GetRead(), { "Hel" });
+            Assert::AreEqual(reader.GetRead(), { L"Hel" });
             reader.SetCursor(6);
-            Assert::AreEqual(reader.GetRead(), { "Hello!" });
+            Assert::AreEqual(reader.GetRead(), { L"Hello!" });
         }
 
         TEST_METHOD(SkipWhitespace_none) {
-            StringReader reader("Hello!");
+            WStringReader reader(L"Hello!");
             reader.SkipWhitespace();
-            Assert::AreEqual(reader.GetCursor(), 0);
+            Assert::AreEqual<size_t>(reader.GetCursor(), 0);
         }
 
         TEST_METHOD(SkipWhitespace_mixed) {
-            StringReader reader(" \t \t\nHello!");
+            WStringReader reader(L" \t \t\nHello!");
             reader.SkipWhitespace();
-            Assert::AreEqual(reader.GetCursor(), 5);
+            Assert::AreEqual<size_t>(reader.GetCursor(), 5);
         }
 
         TEST_METHOD(SkipWhitespace_empty) {
-            StringReader reader("");
+            WStringReader reader(L"");
             reader.SkipWhitespace();
-            Assert::AreEqual(reader.GetCursor(), 0);
+            Assert::AreEqual<size_t>(reader.GetCursor(), 0);
         }
 
         TEST_METHOD(ReadUnquotedString) {
-            StringReader reader("hello world");
-            Assert::AreEqual(reader.ReadUnquotedString(), { "hello" });
-            Assert::AreEqual(reader.GetRead(), {"hello"});
-            Assert::AreEqual(reader.GetRemaining(), { " world" });
+            WStringReader reader(L"hello world");
+            Assert::AreEqual(reader.ReadUnquotedString(), { L"hello" });
+            Assert::AreEqual(reader.GetRead(), {L"hello"});
+            Assert::AreEqual(reader.GetRemaining(), { L" world" });
         }
 
         TEST_METHOD(ReadUnquotedString_empty) {
-            StringReader reader("");
-            Assert::AreEqual(reader.ReadUnquotedString(), { "" });
-            Assert::AreEqual(reader.GetRead(), { "" });
-            Assert::AreEqual(reader.GetRemaining(), { "" });
+            WStringReader reader(L"");
+            Assert::AreEqual(reader.ReadUnquotedString(), { L"" });
+            Assert::AreEqual(reader.GetRead(), { L"" });
+            Assert::AreEqual(reader.GetRemaining(), { L"" });
         }
 
         TEST_METHOD(ReadUnquotedString_empty_withRemaining) {
-            StringReader reader(" hello world");
-            Assert::AreEqual(reader.ReadUnquotedString(), { "" });
-            Assert::AreEqual(reader.GetRead(), { "" });
-            Assert::AreEqual(reader.GetRemaining(), { " hello world" });
+            WStringReader reader(L" hello world");
+            Assert::AreEqual(reader.ReadUnquotedString(), { L"" });
+            Assert::AreEqual(reader.GetRead(), { L"" });
+            Assert::AreEqual(reader.GetRemaining(), { L" hello world" });
         }
 
         TEST_METHOD(ReadQuotedString) {
-            StringReader reader("\"hello world\"");
-            Assert::AreEqual(reader.ReadQuotedString(), { "hello world" });
-            Assert::AreEqual(reader.GetRead(), { "\"hello world\"" });
-            Assert::AreEqual(reader.GetRemaining(), { "" });
+            WStringReader reader(L"\"hello world\"");
+            Assert::AreEqual(reader.ReadQuotedString(), { L"hello world" });
+            Assert::AreEqual(reader.GetRead(), { L"\"hello world\"" });
+            Assert::AreEqual(reader.GetRemaining(), { L"" });
         }
 
         TEST_METHOD(ReadSingleQuotedString) {
-            StringReader reader("'hello world'");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello world"});
-            Assert::AreEqual(reader.GetRead(), {"'hello world'"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"'hello world'");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello world"});
+            Assert::AreEqual(reader.GetRead(), {L"'hello world'"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadMixedQuotedString_doubleInsideSingle) {
-            StringReader reader("'hello \"world\"'");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello \"world\""});
-            Assert::AreEqual(reader.GetRead(), {"'hello \"world\"'"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"'hello \"world\"'");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello \"world\""});
+            Assert::AreEqual(reader.GetRead(), {L"'hello \"world\"'"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadMixedQuotedString_singleInsideDouble) {
-            StringReader reader("\"hello 'world'\"");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello 'world'"});
-            Assert::AreEqual(reader.GetRead(), {"\"hello 'world'\""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"\"hello L'world'\"");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello L'world'"});
+            Assert::AreEqual(reader.GetRead(), {L"\"hello L'world'\""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadQuotedString_empty) {
-            StringReader reader("");
-            Assert::AreEqual(reader.ReadQuotedString(), {""});
-            Assert::AreEqual(reader.GetRead(), {""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"");
+            Assert::AreEqual(reader.ReadQuotedString(), {L""});
+            Assert::AreEqual(reader.GetRead(), {L""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadQuotedString_emptyQuoted) {
-            StringReader reader("\"\"");
-            Assert::AreEqual(reader.ReadQuotedString(), {""});
-            Assert::AreEqual(reader.GetRead(), {"\"\""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"\"\"");
+            Assert::AreEqual(reader.ReadQuotedString(), {L""});
+            Assert::AreEqual(reader.GetRead(), {L"\"\""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadQuotedString_emptyQuoted_withRemaining) {
-            StringReader reader("\"\" hello world");
-            Assert::AreEqual(reader.ReadQuotedString(), {""});
-            Assert::AreEqual(reader.GetRead(), {"\"\""});
-            Assert::AreEqual(reader.GetRemaining(), {" hello world"});
+            WStringReader reader(L"\"\" hello world");
+            Assert::AreEqual(reader.ReadQuotedString(), {L""});
+            Assert::AreEqual(reader.GetRead(), {L"\"\""});
+            Assert::AreEqual(reader.GetRemaining(), {L" hello world"});
         }
 
         TEST_METHOD(ReadQuotedString_withEscapedQuote) {
-            StringReader reader("\"hello \\\"world\\\"\"");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello \"world\""});
-            Assert::AreEqual(reader.GetRead(), {"\"hello \\\"world\\\"\""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"\"hello \\\"world\\\"\"");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello \"world\""});
+            Assert::AreEqual(reader.GetRead(), {L"\"hello \\\"world\\\"\""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadQuotedString_withEscapedEscapes) {
-            StringReader reader("\"\\\\o/\"");
-            Assert::AreEqual(reader.ReadQuotedString(), {"\\o/"});
-            Assert::AreEqual(reader.GetRead(), {"\"\\\\o/\""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"\"\\\\o/\"");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"\\o/"});
+            Assert::AreEqual(reader.GetRead(), {L"\"\\\\o/\""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadQuotedString_withRemaining) {
-            StringReader reader("\"hello world\" foo bar");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello world"});
-            Assert::AreEqual(reader.GetRead(), {"\"hello world\""});
-            Assert::AreEqual(reader.GetRemaining(), {" foo bar"});
+            WStringReader reader(L"\"hello world\" foo bar");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello world"});
+            Assert::AreEqual(reader.GetRead(), {L"\"hello world\""});
+            Assert::AreEqual(reader.GetRemaining(), {L" foo bar"});
         }
 
         TEST_METHOD(ReadQuotedString_withImmediateRemaining) {
-            StringReader reader("\"hello world\"foo bar");
-            Assert::AreEqual(reader.ReadQuotedString(), {"hello world"});
-            Assert::AreEqual(reader.GetRead(), {"\"hello world\""});
-            Assert::AreEqual(reader.GetRemaining(), {"foo bar"});
+            WStringReader reader(L"\"hello world\"foo bar");
+            Assert::AreEqual(reader.ReadQuotedString(), {L"hello world"});
+            Assert::AreEqual(reader.GetRead(), {L"\"hello world\""});
+            Assert::AreEqual(reader.GetRemaining(), {L"foo bar"});
         }
 
         TEST_METHOD(ReadQuotedString_noOpen) {
             try {
-                StringReader("hello world\"").ReadQuotedString();
+                WStringReader(L"hello world\"").ReadQuotedString();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {0});
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 0);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadQuotedString_noClose) {
             try {
-                StringReader("\"hello world").ReadQuotedString();
+                WStringReader(L"\"hello world").ReadQuotedString();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {12});
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 12);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadQuotedString_invalidEscape) {
             try {
-                StringReader("\"hello\\nworld\"").ReadQuotedString();
+                WStringReader(L"\"hello\\nworld\"").ReadQuotedString();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {7});
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 7);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadQuotedString_invalidQuoteEscape) {
             try {
-                StringReader("'hello\\\"\'world").ReadQuotedString();
+                WStringReader(L"'hello\\\"\'world").ReadQuotedString();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {7});
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 7);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadString_noQuotes) {
-            StringReader reader("hello world");
-            Assert::AreEqual(reader.ReadString(), {"hello"});
-            Assert::AreEqual(reader.GetRead(), {"hello"});
-            Assert::AreEqual(reader.GetRemaining(), {" world"});
+            WStringReader reader(L"hello world");
+            Assert::AreEqual(reader.ReadString(), {L"hello"});
+            Assert::AreEqual(reader.GetRead(), {L"hello"});
+            Assert::AreEqual(reader.GetRemaining(), {L" world"});
         }
 
         TEST_METHOD(ReadString_singleQuotes) {
-            StringReader reader("'hello world'");
-            Assert::AreEqual(reader.ReadString(), {"hello world"});
-            Assert::AreEqual(reader.GetRead(), {"'hello world'"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"'hello world'");
+            Assert::AreEqual(reader.ReadString(), {L"hello world"});
+            Assert::AreEqual(reader.GetRead(), {L"'hello world'"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadString_doubleQuotes) {
-            StringReader reader("\"hello world\"");
-            Assert::AreEqual(reader.ReadString(), {"hello world"});
-            Assert::AreEqual(reader.GetRead(), {"\"hello world\""});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            WStringReader reader(L"\"hello world\"");
+            Assert::AreEqual(reader.ReadString(), {L"hello world"});
+            Assert::AreEqual(reader.GetRead(), {L"\"hello world\""});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
+        }
+
+        TEST_METHOD(ReadStringUntil_invalid) {
+            try {
+                WStringReader(L"hello\\, world").ReadStringUntil(L',');
+                Assert::Fail();
+            }
+            catch (WCommandSyntaxException const& ex) {
+                Assert::AreEqual<size_t>(ex.GetCursor(), 13);
+            }
+            catch (...) {
+                Assert::Fail();
+            }
+        }
+
+        TEST_METHOD(ReadStringUntil) {
+            WStringReader reader(L"hello\\, world, ");
+            Assert::AreEqual(reader.ReadStringUntil(L','), {L"hello, world"});
+            Assert::AreEqual(reader.GetRead(), { L"hello\\, world," });
+            Assert::AreEqual(reader.GetRemaining(), { L" " });
+        }
+
+        TEST_METHOD(ReadStringUntilOneOf) {
+            WStringReader reader(L"hello, world");
+            Assert::AreEqual(reader.ReadStringUntilOneOf(L"wo"), {L"hell"});
+            Assert::AreEqual(reader.GetRead(), { L"hello" });
+            Assert::AreEqual(reader.GetRemaining(), { L", world" });
+        }
+
+        TEST_METHOD(ReadUnquotedStringUntil) {
+            WStringReader reader(L"hello_world");
+            Assert::AreEqual(reader.ReadUnquotedStringUntil(L'_'), { L"hello" });
+            Assert::AreEqual(reader.GetRead(), { L"hello_" });
+            Assert::AreEqual(reader.GetRemaining(), { L"world" });
+        }
+
+        TEST_METHOD(ReadUnquotedStringUntilOneOf) {
+            WStringReader reader(L"hello_world");
+            Assert::AreEqual(reader.ReadUnquotedStringUntilOneOf(L"wo"), { L"hell" });
+            Assert::AreEqual(reader.GetRead(), { L"hello" });
+            Assert::AreEqual(reader.GetRemaining(), { L"_world" });
         }
 
         TEST_METHOD(ReadInt) {
-            StringReader reader("1234567890");
+            WStringReader reader(L"1234567890");
             Assert::AreEqual(reader.ReadValue<int>(), {1234567890});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadInt_negative) {
-            StringReader reader("-1234567890");
+            WStringReader reader(L"-1234567890");
             Assert::AreEqual(reader.ReadValue<int>(), {-1234567890});
-            Assert::AreEqual(reader.GetRead(), {"-1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"-1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadInt_invalid) {
-            try {
-                StringReader("12.34").ReadValue<int>();
-            }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {0});
-            }
+            WStringReader reader(L"12.34");
+            Assert::AreEqual(reader.ReadValue<int>(), 12);
+            Assert::AreEqual(reader.GetRemaining(), { L".34" });
         }
 
         TEST_METHOD(ReadInt_none) {
             try {
-                StringReader("").ReadValue<int>();
+                WStringReader(L"").ReadValue<int>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadInt_withRemaining) {
-            StringReader reader("1234567890 foo bar");
+            WStringReader reader(L"1234567890 foo bar");
             Assert::AreEqual(reader.ReadValue<int>(), {1234567890});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {" foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L" foo bar"});
         }
 
         TEST_METHOD(ReadInt_withRemainingImmediate) {
-            StringReader reader("1234567890foo bar");
+            WStringReader reader(L"1234567890foo bar");
             Assert::AreEqual(reader.ReadValue<int>(), {1234567890});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {"foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L"foo bar"});
         }
 
         TEST_METHOD(ReadLong) {
-            StringReader reader("1234567890");
+            WStringReader reader(L"1234567890");
             Assert::AreEqual(reader.ReadValue<long>(), {1234567890L});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadLong_negative) {
-            StringReader reader("-1234567890");
+            WStringReader reader(L"-1234567890");
             Assert::AreEqual(reader.ReadValue<long>(), {-1234567890L});
-            Assert::AreEqual(reader.GetRead(), {"-1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"-1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadLong_invalid) {
-            try {
-                StringReader("12.34").ReadValue<long>();
-            }
-            catch (CommandSyntaxException const& ex) {
-                Assert::AreEqual(ex.GetCursor(), {0});
-            }
+            WStringReader reader(L"12.34");
+            Assert::AreEqual(reader.ReadValue<long>(), 12l);
+            Assert::AreEqual(reader.GetRemaining(), { L".34" });
         }
 
         TEST_METHOD(ReadLong_none) {
             try {
-                StringReader("").ReadValue<long>();
+                WStringReader(L"").ReadValue<long>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadLong_withRemaining) {
-            StringReader reader("1234567890 foo bar");
+            WStringReader reader(L"1234567890 foo bar");
             Assert::AreEqual(reader.ReadValue<long>(), {1234567890L});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {" foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L" foo bar"});
         }
 
         TEST_METHOD(ReadLong_withRemainingImmediate) {
-            StringReader reader("1234567890foo bar");
+            WStringReader reader(L"1234567890foo bar");
             Assert::AreEqual(reader.ReadValue<long>(), {1234567890L});
-            Assert::AreEqual(reader.GetRead(), {"1234567890"});
-            Assert::AreEqual(reader.GetRemaining(), {"foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"1234567890"});
+            Assert::AreEqual(reader.GetRemaining(), {L"foo bar"});
         }
 
         TEST_METHOD(ReadDouble) {
-            StringReader reader("123");
+            WStringReader reader(L"123");
             Assert::AreEqual(reader.ReadValue<double>(), {123.0});
-            Assert::AreEqual(reader.GetRead(), {"123"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"123"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadDouble_withDecimal) {
-            StringReader reader("12.34");
+            WStringReader reader(L"12.34");
             Assert::AreEqual(reader.ReadValue<double>(), {12.34});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadDouble_negative) {
-            StringReader reader("-123");
+            WStringReader reader(L"-123");
             Assert::AreEqual(reader.ReadValue<double>(), {-123.0});
-            Assert::AreEqual(reader.GetRead(), {"-123"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"-123"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadDouble_invalid) {
             try {
-                StringReader("12.34.56").ReadValue<double>();
+                WStringReader(L"12.34.56").ReadValue<double>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadDouble_none) {
             try {
-                StringReader("").ReadValue<double>();
+                WStringReader(L"").ReadValue<double>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadDouble_withRemaining) {
-            StringReader reader("12.34 foo bar");
+            WStringReader reader(L"12.34 foo bar");
             Assert::AreEqual(reader.ReadValue<double>(), {12.34});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {" foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L" foo bar"});
         }
 
         TEST_METHOD(ReadDouble_withRemainingImmediate) {
-            StringReader reader("12.34foo bar");
+            WStringReader reader(L"12.34foo bar");
             Assert::AreEqual(reader.ReadValue<double>(), {12.34});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {"foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L"foo bar"});
         }
 
         TEST_METHOD(ReadFloat) {
-            StringReader reader("123");
+            WStringReader reader(L"123");
             Assert::AreEqual(reader.ReadValue<float>(), {123.0f});
-            Assert::AreEqual(reader.GetRead(), {"123"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"123"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadFloat_withDecimal) {
-            StringReader reader("12.34");
+            WStringReader reader(L"12.34");
             Assert::AreEqual(reader.ReadValue<float>(), {12.34f});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadFloat_negative) {
-            StringReader reader("-123");
+            WStringReader reader(L"-123");
             Assert::AreEqual(reader.ReadValue<float>(), {-123.0f});
-            Assert::AreEqual(reader.GetRead(), {"-123"});
-            Assert::AreEqual(reader.GetRemaining(), {""});
+            Assert::AreEqual(reader.GetRead(), {L"-123"});
+            Assert::AreEqual(reader.GetRemaining(), {L""});
         }
 
         TEST_METHOD(ReadFloat_invalid) {
             try {
-                StringReader("12.34.56").ReadValue<float>();
+                WStringReader(L"12.34.56").ReadValue<float>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadFloat_none) {
             try {
-                StringReader("").ReadValue<float>();
+                WStringReader(L"").ReadValue<float>();
+                Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadFloat_withRemaining) {
-            StringReader reader("12.34 foo bar");
+            WStringReader reader(L"12.34 foo bar");
             Assert::AreEqual(reader.ReadValue<float>(), {12.34f});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {" foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L" foo bar"});
         }
 
         TEST_METHOD(ReadFloat_withRemainingImmediate) {
-            StringReader reader("12.34foo bar");
+            WStringReader reader(L"12.34foo bar");
             Assert::AreEqual(reader.ReadValue<float>(), {12.34f});
-            Assert::AreEqual(reader.GetRead(), {"12.34"});
-            Assert::AreEqual(reader.GetRemaining(), {"foo bar"});
+            Assert::AreEqual(reader.GetRead(), {L"12.34"});
+            Assert::AreEqual(reader.GetRemaining(), {L"foo bar"});
         }
 
         TEST_METHOD(expect_correct) {
-            StringReader reader("abc");
+            WStringReader reader(L"abc");
             reader.Expect('a');
             Assert::AreEqual(reader.GetCursor(), {1});
         }
 
         TEST_METHOD(expect_incorrect) {
-            StringReader reader("bcd");
+            WStringReader reader(L"bcd");
             try {
                 reader.Expect('a');
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(expect_none) {
-            StringReader reader("");
+            WStringReader reader(L"");
             try {
                 reader.Expect('a');
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadBoolean_correct) {
-            StringReader reader("true");
+            WStringReader reader(L"true");
             Assert::AreEqual(reader.ReadValue<bool>(), {true});
-            Assert::AreEqual(reader.GetRead(), {"true"});
+            Assert::AreEqual(reader.GetRead(), {L"true"});
         }
 
         TEST_METHOD(ReadBoolean_incorrect) {
-            StringReader reader("tuesday");
+            WStringReader reader(L"tuesday");
             try {
                 reader.ReadValue<bool>();
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
         TEST_METHOD(ReadBoolean_none) {
-            StringReader reader("");
+            WStringReader reader(L"");
             try {
                 reader.ReadValue<bool>();
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) {
+            catch (WCommandSyntaxException const& ex) {
                 Assert::AreEqual(ex.GetCursor(), {0});
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
     };

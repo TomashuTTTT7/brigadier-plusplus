@@ -18,13 +18,13 @@ namespace brigadier
     class BasicIParsedArgument
     {
     public:
-        BasicIParsedArgument(int start, int end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
+        BasicIParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
         virtual ~BasicIParsedArgument() = default;
 
-        inline BasicStringRange<CharT> GetRange()    const { return range; }
+        inline StringRange GetRange()    const { return range; }
         inline TypeInfo                GetTypeInfo() const { return typeInfo; }
     protected:
-        BasicStringRange<CharT> range;
+        StringRange range;
         TypeInfo typeInfo;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(IParsedArgument);
@@ -35,7 +35,7 @@ namespace brigadier
     public:
         using T = typename ArgType::type;
 
-        BasicParsedArgument(const int start, const int end, T result) : BasicIParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
+        BasicParsedArgument(size_t start, size_t end, T result) : BasicIParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
         virtual ~BasicParsedArgument() = default;
 
         inline T&       GetResult()       { return result; }

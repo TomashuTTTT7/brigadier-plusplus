@@ -7,10 +7,10 @@ namespace brigadier
     {
         TEST_METHOD(parse)
         {
-            StringReader readert("true");
-            Assert::AreEqual(BoolArgumentType().Parse(readert), true);
-            StringReader readerf("false");
-            Assert::AreEqual(BoolArgumentType().Parse(readerf), false);
+            WStringReader readert(L"true");
+            Assert::AreEqual(BoolArgumentType<wchar_t>().Parse(readert), true);
+            WStringReader readerf(L"false");
+            Assert::AreEqual(BoolArgumentType<wchar_t>().Parse(readerf), false);
         }
     };
 
@@ -19,64 +19,76 @@ namespace brigadier
     {
         TEST_METHOD(parse)
         {
-            StringReader reader("15");
-            Assert::AreEqual(Double().Parse(reader), 15.0);
+            WStringReader reader(L"15");
+            Assert::AreEqual(Double<wchar_t>().Parse(reader), 15.0);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Float().Parse(reader), 15.f);
+            Assert::AreEqual(Float<wchar_t>().Parse(reader), 15.f);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Integer().Parse(reader), 15);
+            Assert::AreEqual(Integer<wchar_t>().Parse(reader), 15);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Long().Parse(reader), 15ll);
+            Assert::AreEqual(Long<wchar_t>().Parse(reader), 15ll);
             Assert::AreEqual(reader.CanRead(), false);
         }
 
         TEST_METHOD(parse_tooSmall)
         {
-            StringReader reader("-5");
+            WStringReader reader(L"-5");
             try {
-                Double(0, 100).Parse(reader);
+                Double<wchar_t>(0, 100).Parse(reader);
                 Assert::Fail();
-            } catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Float(0, 100).Parse(reader);
+                Float<wchar_t>(0, 100).Parse(reader);
                 Assert::Fail();
-            } catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Integer(0, 100).Parse(reader);
+                Integer<wchar_t>(0, 100).Parse(reader);
                 Assert::Fail();
-            } catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Long(0, 100).Parse(reader);
+                Long<wchar_t>(0, 100).Parse(reader);
                 Assert::Fail();
-            } catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
         }
 
         TEST_METHOD(parse_tooBig)
         {
-            StringReader reader("5");
+            WStringReader reader(L"5");
             try {
-                Double(-100, 0).Parse(reader);
+                Double<wchar_t>(-100, 0).Parse(reader);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Float(-100, 0).Parse(reader);
+                Float<wchar_t>(-100, 0).Parse(reader);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Integer(-100, 0).Parse(reader);
+                Integer<wchar_t>(-100, 0).Parse(reader);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
             try {
-                Long(-100, 0).Parse(reader);
+                Long<wchar_t>(-100, 0).Parse(reader);
                 Assert::Fail();
             }
-            catch (CommandSyntaxException const& ex) { Assert::AreEqual(ex.GetCursor(), 0); }
+            catch (WCommandSyntaxException const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
+            catch (...) { Assert::Fail(); }
         }
     };
 
@@ -84,47 +96,47 @@ namespace brigadier
     {
         TEST_METHOD(testParseWord)
         {
-            StringReader reader("hello");
-            Assert::AreEqual(Word().Parse(reader), { "hello" });
+            WStringReader reader(L"hello");
+            Assert::AreEqual(Word<wchar_t>().Parse(reader), { L"hello" });
         }
 
         TEST_METHOD(testParseString)
         {
-            StringReader reader("\"hello world\"");
-            Assert::AreEqual(String().Parse(reader), { "hello world" });
+            WStringReader reader(L"\"hello world\"");
+            Assert::AreEqual(String<wchar_t>().Parse(reader), { L"hello world" });
         }
         
         TEST_METHOD(testParseGreedyString)
         {
-            StringReader reader("Hello world! This is a test.");
-            Assert::AreEqual(GreedyString().Parse(reader), { "Hello world! This is a test." });
+            WStringReader reader(L"Hello world! This is a test.");
+            Assert::AreEqual(GreedyString<wchar_t>().Parse(reader), { L"Hello world! This is a test." });
             Assert::AreEqual(reader.CanRead(), false);
         }
         
         TEST_METHOD(testEscapeIfRequired_notRequired)
         {
-            Assert::AreEqual(String::EscapeIfRequired("hello"), { "hello" });
-            Assert::AreEqual(String::EscapeIfRequired(""), { "" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L"hello"), { L"hello" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L""), { L"" });
         }
         
         TEST_METHOD(testEscapeIfRequired_multipleWords)
         {
-            Assert::AreEqual(String::EscapeIfRequired("hello world"), { "\"hello world\"" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L"hello world"), { L"\"hello world\"" });
         }
 
         TEST_METHOD(testEscapeIfRequired_quote)
         {
-            Assert::AreEqual(String::EscapeIfRequired("hello \"world\"!"), { "\"hello \\\"world\\\"!\"" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L"hello \"world\"!"), { L"\"hello \\\"world\\\"!\"" });
         }
         
         TEST_METHOD(testEscapeIfRequired_escapes)
         {
-            Assert::AreEqual(String::EscapeIfRequired("\\"), { "\"\\\\\"" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L"\\"), { L"\"\\\\\"" });
         }
 
         TEST_METHOD(testEscapeIfRequired_singleQuote)
         {
-            Assert::AreEqual(String::EscapeIfRequired("\""), { "\"\\\"\"" });
+            Assert::AreEqual(String<wchar_t>::EscapeIfRequired(L"\""), { L"\"\\\"\"" });
         }
     };
 }

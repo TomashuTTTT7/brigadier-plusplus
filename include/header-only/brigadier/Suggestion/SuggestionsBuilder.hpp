@@ -8,7 +8,7 @@ namespace brigadier
     class BasicSuggestionsBuilder
     {
     public:
-        BasicSuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, int start, bool* cancel = nullptr) : input(input), inputLowerCase(inputLowerCase), start(start), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
+        BasicSuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, size_t start, bool* cancel = nullptr) : input(input), inputLowerCase(inputLowerCase), start(start), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
 
         inline int GetStart() const { return start; }
         inline std::basic_string_view<CharT> GetInput() const { return input; }
@@ -32,26 +32,26 @@ namespace brigadier
         {
             if (text == remaining) return *this;
 
-            result.emplace_back(BasicStringRange<CharT>::Between(start, input.length()), text);
+            result.emplace_back(StringRange::Between(start, input.length()), text);
             return *this;
         }
         inline BasicSuggestionsBuilder<CharT>& Suggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip)
         {
             if (text == remaining) return *this;
 
-            result.emplace_back(BasicStringRange<CharT>::Between(start, input.length()), text, tooltip);
+            result.emplace_back(StringRange::Between(start, input.length()), text, tooltip);
             return *this;
         }
         template<typename T>
         BasicSuggestionsBuilder<CharT>& Suggest(T value)
         {
-            result.emplace_back(std::move(std::to_string(value)), BasicStringRange<CharT>::Between(start, input.length()));
+            result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()));
             return *this;
         }
         template<typename T>
         BasicSuggestionsBuilder<CharT>& Suggest(T value, std::basic_string_view<CharT> tooltip)
         {
-            result.emplace_back(std::move(std::to_string(value)), BasicStringRange<CharT>::Between(start, input.length()), tooltip);
+            result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()), tooltip);
             return *this;
         }
         inline int AutoSuggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> input)
@@ -78,7 +78,7 @@ namespace brigadier
             std::basic_string<CharT> val = std::to_string(value);
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
-                result.emplace_back(std::move(val), BasicStringRange<CharT>::Between(start, input.length()));
+                result.emplace_back(std::move(val), StringRange::Between(start, input.length()));
                 return 1;
             }
             return 0;
@@ -90,7 +90,7 @@ namespace brigadier
 
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
-                result.emplace_back(std::move(val), BasicStringRange<CharT>::Between(start, input.length()), tooltip);
+                result.emplace_back(std::move(val), StringRange::Between(start, input.length()), tooltip);
                 return 1;
             }
             return 0;
@@ -122,7 +122,7 @@ namespace brigadier
             return *this;
         }
 
-        inline void SetOffset(int start)
+        inline void SetOffset(size_t start)
         {
             this->start = start;
             remaining = input.substr(start);
@@ -137,7 +137,7 @@ namespace brigadier
 
         ~BasicSuggestionsBuilder<CharT>() = default;
     private:
-        int start = 0;
+        size_t start = 0;
         std::basic_string_view<CharT> input;
         std::basic_string_view<CharT> inputLowerCase;
         std::basic_string_view<CharT> remaining;
@@ -145,5 +145,5 @@ namespace brigadier
         std::vector<BasicSuggestion<CharT>> result;
         bool* cancel = nullptr;
     };
-    BRIGADIER_SPECIALIZE_BASIC_TEMPL(SuggestionsBuilder);
+    BRIGADIER_SPECIALIZE_BASIC(SuggestionsBuilder);
 }

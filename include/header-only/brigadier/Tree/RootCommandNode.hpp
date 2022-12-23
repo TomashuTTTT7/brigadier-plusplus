@@ -8,7 +8,7 @@ namespace brigadier
     class BasicRootCommandNode : public BasicCommandNode<CharT, S>
     {
     public:
-        BasicRootCommandNode() : BasicCommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<CharT, S> { return { s.GetSource() }; }, false) {}
+        BasicRootCommandNode() : BasicCommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
 
         virtual ~BasicRootCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }

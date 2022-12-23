@@ -5,7 +5,7 @@
 
 #define BRIGADIER_PACK(...) __VA_ARGS__
 
-namespace brigadier::utils
+namespace brigadier::detail
 {
     template<size_t SZ0, size_t SZ1, size_t SZ2, size_t SZ3>
     constexpr inline auto literal_type(char c,
@@ -75,12 +75,14 @@ namespace brigadier::utils
 
 #define BRIGADIER_LITERAL(type, s_literal) brigadier::detail::literal_type(type(), s_literal, L##s_literal, u##s_literal, U##s_literal)
 
-#define BRIGADIER_SPECIALIZE_BASIC(type)  \
+#define BRIGADIER_SPECIALIZE_BASIC(type) \
+using    type = Basic##type<char>;       \
+using W##type = Basic##type<wchar_t>;
 
-//using    type = basic_##type<char>;       \
-//using W##type = basic_##type<wchar_t>;
+#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)                      \
+template<typename... Ts> using    type = Basic##type<char, Ts...>;  \
+template<typename... Ts> using W##type = Basic##type<wchar_t, Ts...>;
 
-#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)                        \
-
-//template<typename... Ts> using      type = Basic##type<char, Ts...>;  \
-//template<typename... Ts> using   W##type = Basic##type<wchar_t, Ts...>;
+#define BRIGADIER_SPECIALIZE_BASIC_ALIAS(type, tepl_list, templ_spec) \
+template<tepl_list> using    type = Basic##type<char, templ_spec>;    \
+template<tepl_list> using W##type = Basic##type<wchar_t, templ_spec>;

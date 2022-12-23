@@ -53,6 +53,10 @@ namespace brigadier
         \param args these arguments are forwarded to builder to node constructor. The first param is always node name.
         \return the builder with node added to this tree
         */
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto Register(Args&&... args) {
+            return Register<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next = Literal, typename Type = void, typename... Args>
         auto Register(Args&&... args)
         {
@@ -70,30 +74,31 @@ namespace brigadier
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
                     return Next<CharT, S>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
-            else {
-                using next_node = typename Next<S, Type>::node_type;
+            else
+            {
+                using next_node = typename Next<CharT, S, Type>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = root->children.find(name);
                 if (arg == root->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     root->AddChild(new_node);
-                    return Next<S, Type>(std::move(new_node));
+                    return Next<CharT, S, Type>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
         }
@@ -130,7 +135,7 @@ namespace brigadier
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
         If this command returns a value, then it successfully executed something. If it could not parse the command, or the execution was a failure,
-        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
@@ -146,7 +151,7 @@ namespace brigadier
         \param source a custom "source" object, usually representing the originator of this command
         \return a numeric result from a "command" that was performed
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
         \see Execute(ParseResults)
@@ -166,7 +171,7 @@ namespace brigadier
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
         If this command returns a value, then it successfully executed something. If it could not parse the command, or the execution was a failure,
-        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
@@ -182,7 +187,7 @@ namespace brigadier
         \param source a custom "source" object, usually representing the originator of this command
         \return a numeric result from a "command" that was performed
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
         \see Execute(ParseResults)
@@ -199,7 +204,7 @@ namespace brigadier
 
         If this command returns a value, then it successfully executed something. If the execution was a failure,
         then an exception will be thrown.
-        Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
@@ -214,17 +219,17 @@ namespace brigadier
         \param parse the result of a successful Parse(StringReader, Object)
         \return a numeric result from a "command" that was performed.
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
         \see Execute(String, Object)
         \see Execute(StringReader, Object)
         */
-        int Execute(ParseResults<CharT, S>& parse)
+        int Execute(BasicParseResults<CharT, S>& parse)
         {
             if (parse.GetReader().CanRead()) {
                 if (parse.GetExceptions().size() == 1) {
-                    throw *parse.GetExceptions().begin();
+                    throw parse.GetExceptions().begin()->second;
                 }
                 else if (parse.GetContext().GetRange().IsEmpty()) {
                     throw exceptions::DispatcherUnknownCommand(parse.GetReader());
@@ -263,10 +268,10 @@ namespace brigadier
                                         }
                                     }
                                 }
-                                catch (BasicCommandSyntaxException<CharT> const& ex) {
+                                catch (BasicCommandSyntaxException<CharT> const&) {
                                     consumer(context, false, 0);
                                     if (!forked) {
-                                        throw ex;
+                                        throw;
                                     }
                                 }
                             }
@@ -279,10 +284,10 @@ namespace brigadier
                             consumer(context, true, value);
                             successfulForks++;
                         }
-                        catch (BasicCommandSyntaxException<CharT> const& ex) {
+                        catch (BasicCommandSyntaxException<CharT> const&) {
                             consumer(context, false, 0);
                             if (!forked) {
-                                throw ex;
+                                throw;
                             }
                         }
                     }
@@ -326,7 +331,7 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<CharT, S> Parse(std::basic_string_view<CharT> command, S source)
+        BasicParseResults<CharT, S> Parse(std::basic_string_view<CharT> command, S source)
         {
             BasicStringReader<CharT> reader = BasicStringReader<CharT>(command);
             return Parse(reader, std::move(source));
@@ -359,30 +364,33 @@ namespace brigadier
         \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        ParseResults<CharT, S> Parse(BasicStringReader<CharT>& command, S source)
+        BasicParseResults<CharT, S> Parse(BasicStringReader<CharT>& command, S source)
         {
-            ParseResults<CharT, S> result(BasicCommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), command);
+            BasicParseResults<CharT, S> result(BasicCommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), command);
             ParseNodes(root.get(), result);
             return result;
         }
 
     private:
-        void ParseNodes(BasicCommandNode<CharT, S>* node, ParseResults<CharT, S>& result)
+        void ParseNodes(BasicCommandNode<CharT, S>* node, BasicParseResults<CharT, S>& result)
         {
             if (!node)
                 return;
 
             S& source = result.context.GetSource();
 
-            std::optional<ParseResults<CharT, S>> best_potential = {};
-            std::optional<ParseResults<CharT, S>> current_result_ctx = {}; // delay initialization
+            std::optional<BasicParseResults<CharT, S>> ctxs[2] = {};
 
-            int cursor = result.reader.GetCursor();
+            bool best = 0;
+
+            size_t cursor = result.reader.GetCursor();
 
             auto [relevant_nodes, relevant_node_count] = node->GetRelevantNodes(result.reader);
 
             for (size_t i = 0; i < relevant_node_count; ++i) {
                 auto& child = relevant_nodes[i];
+                auto& current_result_ctx = ctxs[!best];
+                auto& best_potential = ctxs[best];
 
                 if (!child->CanUse(source)) {
                     continue;
@@ -395,7 +403,7 @@ namespace brigadier
                 }
                 else {
                     // create context
-                    current_result_ctx = ParseResults<CharT, S>(BasicCommandContext<CharT, S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
+                    current_result_ctx.emplace(BasicCommandContext<CharT, S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
                 }
 
                 auto& current_result = current_result_ctx.value();
@@ -407,14 +415,14 @@ namespace brigadier
                     try {
                         child->Parse(reader, context);
                     }
-                    catch (std::runtime_error const& ex) {
-                        throw exceptions::DispatcherParseException(reader, ex.what());
+                    catch (BasicRuntimeError<CharT> const& ex) {
+                        throw exceptions::DispatcherParseException(reader, ex.What());
                     }
                     if (reader.CanRead() && reader.Peek() != ARGUMENT_SEPARATOR_CHAR) {
                         throw exceptions::DispatcherExpectedArgumentSeparator(reader);
                     }
                 }
-                catch (BasicCommandSyntaxException<CharT> ex) {
+                catch (BasicCommandSyntaxException<CharT> const& ex) {
                     result.exceptions.emplace(child.get(), std::move(ex));
                     reader.SetCursor(cursor);
                     continue;
@@ -425,7 +433,7 @@ namespace brigadier
                 if (reader.CanRead(child->GetRedirect() == nullptr ? 2 : 1)) {
                     reader.Skip();
                     if (child->GetRedirect() != nullptr) {
-                        ParseResults<CharT, S> child_result(BasicCommandContext<CharT, S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
+                        BasicParseResults<CharT, S> child_result(BasicCommandContext<CharT, S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
                         ParseNodes(child->GetRedirect().get(), child_result);
                         result.context.Merge(std::move(context));
                         result.context.WithChildContext(std::move(child_result.context));
@@ -440,14 +448,15 @@ namespace brigadier
 
                 if (best_potential.has_value()) {
                     if (current_result.IsBetterThan(*best_potential)) {
-                        best_potential = std::move(current_result_ctx);
+                        best = !best;
                     }
                 }
                 else {
-                    best_potential = std::move(current_result_ctx);
+                    best = !best;
                 }
             }
 
+            auto& best_potential = ctxs[best];
             if (best_potential.has_value()) {
                 result.exceptions.clear();
                 result.reader = std::move(best_potential->reader);
@@ -501,10 +510,10 @@ namespace brigadier
                 prefix = node->GetUsageText();
                 prefix += ARGUMENT_SEPARATOR;
                 if (node->GetRedirect() == root) {
-                    prefix += "...";
+                    prefix += BRIGADIER_LITERAL(CharT, "...");
                 }
                 else {
-                    prefix += "-> ";
+                    prefix += BRIGADIER_LITERAL(CharT, "-> ");
                     prefix += node->GetRedirect()->GetUsageText();
                 }
                 result.emplace_back(std::move(prefix));
@@ -580,10 +589,10 @@ namespace brigadier
                 if (node->GetRedirect()) {
                     self += ARGUMENT_SEPARATOR;
                     if (node->GetRedirect() == root) {
-                        self += "...";
+                        self += BRIGADIER_LITERAL(CharT, "...");
                     }
                     else {
-                        self += "-> ";
+                        self += BRIGADIER_LITERAL(CharT, "-> ");
                         self += node->GetRedirect()->GetUsageText();
                     }
                     return self;
@@ -662,7 +671,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
+        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(BasicParseResults<CharT, S>& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -684,19 +693,19 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, int cursor, bool* cancel = nullptr)
+        std::future<BasicSuggestions<CharT>> GetCompletionSuggestions(BasicParseResults<CharT, S>& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, int cursor, bool* cancel) {
+            return std::async(std::launch::async, [](BasicParseResults<CharT, S>* parse, size_t cursor, bool* cancel) {
                 auto context = parse->GetContext();
 
                 BasicSuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
                 BasicCommandNode<CharT, S>* parent = nodeBeforeCursor.parent;
-                int start = (std::min)(nodeBeforeCursor.startPos, cursor);
+                size_t start = (std::min)(nodeBeforeCursor.startPos, cursor);
 
                 std::basic_string_view<CharT> fullInput = parse->GetReader().GetString();
                 std::basic_string_view<CharT> truncatedInput = fullInput.substr(0, cursor);
                 std::basic_string<CharT> truncatedInputLowerCase(truncatedInput);
-                std::transform(truncatedInputLowerCase.begin(), truncatedInputLowerCase.end(), truncatedInputLowerCase.begin(), [](char c) { return std::tolower(c); });
+                std::transform(truncatedInputLowerCase.begin(), truncatedInputLowerCase.end(), truncatedInputLowerCase.begin(), [](CharT c) { return std::tolower(c); });
 
                 context.WithInput(truncatedInput);
 
@@ -771,7 +780,7 @@ namespace brigadier
         BasicCommandNode<CharT, S>* FindNode(std::vector<std::basic_string<CharT>> const& path) {
             BasicCommandNode<CharT, S>* node = root.get();
             for (auto& name : path) {
-                node = node->GetChild(name);
+                node = node->GetChild(name).get();
                 if (node == nullptr) {
                     return nullptr;
                 }

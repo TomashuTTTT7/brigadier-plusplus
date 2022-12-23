@@ -4,21 +4,49 @@
 
 namespace brigadier
 {
-    static constexpr size_t default_context_amount = 10;
+    template<typename CharT, typename E>
+    class BasicException {
+    public:
+        BasicException() {}
+        BasicException(BasicException&&) = default;
+        BasicException(BasicException const& that) {
+            this->message << that.message.str();
+        }
+    public:
+        template<typename T>
+        E&& operator<<(T&& arg)&& {
+            message << arg;
+            return std::move(*static_cast<E*>(this));
+        }
+    public:
+        std::basic_string<CharT> What() const {
+            return message.str();
+        }
+    protected:
+        std::basic_ostringstream<CharT> message;
+    };
+
     template<typename CharT>
-    class BasicCommandSyntaxException {
+    class BasicRuntimeError : public BasicException<CharT, BasicRuntimeError<CharT>> {};
+    BRIGADIER_SPECIALIZE_BASIC(RuntimeError);
+
+    static constexpr size_t default_context_amount = 10;
+
+    template<typename CharT>
+    class BasicCommandSyntaxException : public BasicException<CharT, BasicCommandSyntaxException<CharT>> {
     public:
         BasicCommandSyntaxException(BasicStringReader<CharT> context) : context(context) {}
         BasicCommandSyntaxException(std::nullptr_t) {}
         BasicCommandSyntaxException() {}
-        //virtual ~basic_command_syntax_exception() = default;
-    public:
-        inline BasicStringReader<CharT> const& GetContext() { return context; }
-        template<typename T>
-        BasicCommandSyntaxException<CharT>&& operator<<(T&& arg)&& {
-            message << arg;
-            return std::move(*this);
+        BasicCommandSyntaxException(BasicCommandSyntaxException&&) = default;
+        BasicCommandSyntaxException(BasicCommandSyntaxException const& that) {
+            this->context = that.context;
         }
+        //virtual ~BasicCommandSyntaxException() = default;
+    public:
+        inline BasicStringReader<CharT> const& GetContext() const { return context; }
+        inline size_t GetCursor() const { return context.GetCursor(); }
+        inline std::basic_string_view<CharT> GetString() const { return context.GetString(); }
     private:
         void DescribeContext(size_t context_amount) {
             if (!context.GetString().empty()) {
@@ -37,10 +65,9 @@ namespace brigadier
         std::basic_string<CharT> What(size_t context_amount = default_context_amount) {
             //DescribeException();
             DescribeContext(context_amount);
-            return message.str();
+            return BasicException<CharT, BasicCommandSyntaxException<CharT>>::What();
         }
     protected:
-        std::basic_ostringstream<CharT> message;
         BasicStringReader<CharT> context;
     };
     BRIGADIER_SPECIALIZE_BASIC(CommandSyntaxException);

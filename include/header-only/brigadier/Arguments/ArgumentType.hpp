@@ -228,7 +228,7 @@ namespace brigadier
 
         T Parse(BasicStringReader<CharT>& reader)
         {
-            int start = reader.GetCursor();
+            size_t start = reader.GetCursor();
             T result = reader.ReadValue<T>();
             if (result < minimum) {
                 reader.SetCursor(start);
@@ -300,7 +300,7 @@ namespace brigadier
     public:
         T Parse(BasicStringReader<CharT>& reader)
         {
-            int start = reader.GetCursor();
+            size_t start = reader.GetCursor();
             auto str = reader.ReadString();
             auto result = magic_enum::enum_cast<T>(str);
             if (!result.has_value())

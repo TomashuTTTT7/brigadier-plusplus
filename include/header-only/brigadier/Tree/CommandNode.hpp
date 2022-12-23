@@ -106,7 +106,7 @@ namespace brigadier
                 return;
 
             if (node->GetNodeType() == CommandNodeType::RootCommandNode) {
-                throw std::runtime_error("Cannot add a RootCommandNode as a child to any other BasicCommandNode");
+                throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add a RootCommandNode as a child to any other BasicCommandNode");
             }
 
             auto child = children.find(node->GetName());
@@ -115,7 +115,7 @@ namespace brigadier
                 auto child_node = child->second;
 
                 if (child_node->GetNodeType() != node->GetNodeType())
-                    throw std::runtime_error("Node type (literal/argument) mismatch!");
+                    throw BasicRuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
 
                 auto node_command = node->GetCommand();
                 if (node_command != nullptr) {
@@ -163,7 +163,7 @@ namespace brigadier
         std::tuple<std::shared_ptr<BasicCommandNode<CharT, S>>*, size_t> GetRelevantNodes(BasicStringReader<CharT>& input)
         {
             if (literals.size() > 0) {
-                int cursor = input.GetCursor();
+                size_t cursor = input.GetCursor();
                 while (input.CanRead() && input.Peek() != ' ') {
                     input.Skip();
                 }
