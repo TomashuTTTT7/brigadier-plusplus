@@ -7,8 +7,10 @@ namespace brigadier
     struct TypeInfo
     {
         TypeInfo(size_t hash) : hash(hash) {}
-        template<typename ArgType>
-        static constexpr size_t Create() { return (((uintptr_t)((void*)ArgType::GetTypeName().data())) + (sizeof(typename ArgType::type) << 24) + (sizeof(ArgType) << 8)); }
+        template<typename CharT, typename ArgType>
+        static constexpr size_t Create() { return (((uintptr_t)((void*)ArgType::template GetTypeName<CharT>().data())) + (sizeof(typename ArgType::type) << 24) + (sizeof(ArgType) << 8)); }
+        template<typename CharT, template<typename> typename ArgType>
+        inline static constexpr size_t Create() { return Create<CharT, ArgType<CharT>>(); }
         inline bool operator==(TypeInfo const& other) { return hash == other.hash; }
         inline bool operator!=(TypeInfo const& other) { return hash != other.hash; }
         size_t hash = 0;
@@ -35,7 +37,7 @@ namespace brigadier
     public:
         using T = typename ArgType::type;
 
-        ParsedArgument(size_t start, size_t end, T result) : IParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
+        ParsedArgument(size_t start, size_t end, T result) : IParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<CharT, ArgType>())), result(std::move(result)) {}
         virtual ~ParsedArgument() = default;
 
         inline T&       GetResult()       { return result; }

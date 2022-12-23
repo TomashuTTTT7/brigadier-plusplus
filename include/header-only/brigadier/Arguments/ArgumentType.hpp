@@ -22,23 +22,25 @@
 
 namespace brigadier
 {
-    template<typename CharT, typename T>
+    template<typename T>
     class ArgumentType
     {
     public:
         using type = T;
     public:
+        template<typename CharT>
         T Parse(StringReader<CharT>& reader)
         {
             return reader.template ReadValue<T>();
         }
 
-        template<typename S>
+        template<typename CharT, typename S>
         std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             return Suggestions<CharT>::Empty();
         }
 
+        template<typename CharT>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
 #ifdef HAS_NAMEOF
@@ -48,6 +50,7 @@ namespace brigadier
 #endif
         }
 
+        template<typename CharT>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
             return {};
@@ -58,11 +61,11 @@ namespace brigadier
     enum class StringArgType {
         SINGLE_WORD,
         QUOTABLE_PHRASE,
-        GREEDY_PHRASE
+        GREEDY_PHRASE,
     };
 
     template<typename CharT, StringArgType str_type>
-    class StringArgumentType : public ArgumentType<CharT, std::basic_string<CharT>>
+    class StringArgumentType : public ArgumentType<std::basic_string<CharT>>
     {
     public:
         StringArgumentType() {};
@@ -72,7 +75,9 @@ namespace brigadier
             return str_type;
         }
 
-        std::basic_string<CharT> Parse(StringReader<CharT>& reader) {
+        template<typename = void>
+        std::basic_string<CharT> Parse(StringReader<CharT>& reader)
+        {
             if (str_type == StringArgType::GREEDY_PHRASE)
             {
                 std::basic_string<CharT> text(reader.GetRemaining());
@@ -89,6 +94,7 @@ namespace brigadier
             }
         }
 
+        template<typename = void>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
             if constexpr (str_type == StringArgType::GREEDY_PHRASE)
@@ -105,6 +111,7 @@ namespace brigadier
             }
         }
 
+        template<typename = void>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
             if constexpr (str_type == StringArgType::GREEDY_PHRASE)
@@ -132,7 +139,9 @@ namespace brigadier
             }
         }
 
-        static std::basic_string<CharT> EscapeIfRequired(std::basic_string_view<CharT> input) {
+        template<typename = void>
+        static std::basic_string<CharT> EscapeIfRequired(std::basic_string_view<CharT> input)
+        {
             for (auto c : input) {
                 if (!StringReader<CharT>::IsAllowedInUnquotedString(c)) {
                     return Escape(std::move(input));
@@ -141,7 +150,9 @@ namespace brigadier
             return std::basic_string<CharT>(input);
         }
 
-        static std::basic_string<CharT> Escape(std::basic_string_view<CharT> input) {
+        template<typename = void>
+        static std::basic_string<CharT> Escape(std::basic_string_view<CharT> input)
+        {
             std::basic_string<CharT> result;
             result.reserve(input.length());
 
@@ -157,24 +168,30 @@ namespace brigadier
             return result;
         }
     };
-    BRIGADIER_REGISTER_ARGTYPE_SPEC(StringArgumentType, Word, StringArgType::SINGLE_WORD);
-    BRIGADIER_REGISTER_ARGTYPE_SPEC(StringArgumentType, String, StringArgType::QUOTABLE_PHRASE);
-    BRIGADIER_REGISTER_ARGTYPE_SPEC(StringArgumentType, GreedyString, StringArgType::GREEDY_PHRASE);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, Word, StringArgType::SINGLE_WORD);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, String, StringArgType::QUOTABLE_PHRASE);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, GreedyString, StringArgType::GREEDY_PHRASE);
+    BRIGADIER_SPECIALIZE_BASIC(Word);
+    BRIGADIER_SPECIALIZE_BASIC(String);
+    BRIGADIER_SPECIALIZE_BASIC(GreedyString);
 
-    template<typename CharT>
-    class BoolArgumentType : public ArgumentType<CharT, bool>
+    class BoolArgumentType : public ArgumentType<bool>
     {
     public:
-        template<typename S>
+        template<typename CharT, typename S>
         std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             builder.AutoSuggestLowerCase(std::initializer_list({ BRIGADIER_LITERAL(CharT, "true"), BRIGADIER_LITERAL(CharT, "false") }));
             return builder.BuildFuture();
         }
+
+        template<typename CharT>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
             return BRIGADIER_LITERAL(CharT, "bool");
         }
+
+        template<typename CharT>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
             return { 
@@ -186,9 +203,10 @@ namespace brigadier
     BRIGADIER_REGISTER_ARGTYPE(BoolArgumentType, Bool);
 
     template<typename CharT>
-    class CharArgumentType : public ArgumentType<CharT, CharT>
+    class CharArgumentType : public ArgumentType<CharT>
     {
     public:
+        template<typename = void>
         CharT Parse(StringReader<CharT>& reader)
         {
             if (reader.CanRead())
@@ -196,11 +214,13 @@ namespace brigadier
             else throw exceptions::ReaderExpectedValue(reader);
         }
 
+        template<typename = void>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
             return BRIGADIER_LITERAL(CharT, "char");
         }
 
+        template<typename = void>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
             return { 
@@ -210,10 +230,11 @@ namespace brigadier
             };
         }
     };
-    BRIGADIER_REGISTER_ARGTYPE(CharArgumentType, Char);
+    BRIGADIER_REGISTER_ARGTYPE_CHAR(CharArgumentType, Char);
+    BRIGADIER_SPECIALIZE_BASIC(Char);
 
-    template<typename CharT, typename T>
-    class ArithmeticArgumentType : public ArgumentType<CharT, T>
+    template<typename T>
+    class ArithmeticArgumentType : public ArgumentType<T>
     {
         static_assert(std::is_arithmetic_v<T>, "T must be a number");
     public:
@@ -226,6 +247,7 @@ namespace brigadier
             return maximum;
         }
 
+        template<typename CharT>
         T Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
@@ -241,9 +263,10 @@ namespace brigadier
             return result;
         }
 
+        template<typename CharT>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
-            /**/ if constexpr (std::is_floating_point_v<T>)
+            if constexpr (std::is_floating_point_v<T>)
                 return BRIGADIER_LITERAL(CharT, "float");
             else if constexpr (std::is_integral_v<T>)
             {
@@ -252,12 +275,13 @@ namespace brigadier
                 else
                     return BRIGADIER_LITERAL(CharT, "uint");
             }
-            else return ArgumentType<CharT, T>::GetTypeName();
+            else return ArgumentType<T>::template GetTypeName<CharT>();
         }
 
+        template<typename CharT>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
-            /**/ if constexpr (std::is_floating_point_v<T>)
+            if constexpr (std::is_floating_point_v<T>)
                 return {
                     BRIGADIER_LITERAL(CharT, "0"),
                     BRIGADIER_LITERAL(CharT, "1.2"),
@@ -293,11 +317,12 @@ namespace brigadier
     BRIGADIER_REGISTER_ARGTYPE_TEMPL(ArithmeticArgumentType, Number);
 
 #ifdef HAS_MAGICENUM
-    template<typename CharT, typename T>
-    class EnumArgumentType : public ArgumentType<CharT, T>
+    template<typename T>
+    class EnumArgumentType : public ArgumentType<T>
     {
         static_assert(std::is_enum_v<T>, "T must be enum");
     public:
+        template<typename CharT>
         T Parse(StringReader<CharT>& reader)
         {
             size_t start = reader.GetCursor();
@@ -305,12 +330,13 @@ namespace brigadier
             auto result = magic_enum::enum_cast<T>(str);
             if (!result.has_value())
             {
+                reader.SetCursor(start);
                 throw exceptions::ReaderInvalidValue(reader, str);
             }
             return result.value();
         }
 
-        template<typename S>
+        template<typename CharT, typename S>
         std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             static constexpr auto names = magic_enum::enum_names<T>();
@@ -318,11 +344,13 @@ namespace brigadier
             return builder.BuildFuture();
         }
 
+        template<typename CharT>
         static constexpr std::basic_string_view<CharT> GetTypeName()
         {
-            return "enum";
+            return BRIGADIER_LITERAL(CharT, "enum");
         }
 
+        template<typename CharT>
         static inline std::vector<std::basic_string_view<CharT>> GetExamples()
         {
             static constexpr auto names = magic_enum::enum_names<T>();

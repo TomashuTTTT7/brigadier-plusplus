@@ -49,10 +49,25 @@ namespace brigadier
         inline bool HasNodes() const;
         inline bool IsForked() const;
 
+        template<typename ArgType>
+        typename ArgType::type GetArgument(std::basic_string_view<CharT> name);
+        template<typename ArgType>
+        std::optional<typename ArgType::type> GetArgumentOpt(std::basic_string_view<CharT> name);
+        template<typename ArgType>
+        typename ArgType::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value);
+        
         template<template<typename> typename ArgType>
-        typename ArgType<CharT>::type GetArgument(std::basic_string_view<CharT> name);
+        inline typename ArgType<CharT>::type GetArgument(std::basic_string_view<CharT> name) {
+            return GetArgument<ArgType<CharT>>(name);
+        }
         template<template<typename> typename ArgType>
-        typename ArgType<CharT>::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value);
+        inline std::optional<typename ArgType<CharT>::type> GetArgumentOpt(std::basic_string_view<CharT> name) {
+            return GetArgumentOpt<ArgType<CharT>>(name);
+        }
+        template<template<typename> typename ArgType>
+        inline typename ArgType<CharT>::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value) {
+            return GetArgumentOr<ArgType<CharT>>(name, std::move(default_value));
+        }
 
         ~CommandContext();
     protected:
@@ -138,8 +153,8 @@ namespace brigadier
     }
 
     template<typename CharT, typename S>
-    template<template<typename> typename ArgType>
-    typename ArgType<CharT>::type CommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name)
+    template<typename ArgType>
+    typename ArgType::type CommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name)
     {
         auto argument = context->arguments.find(name);
 
@@ -147,16 +162,33 @@ namespace brigadier
             throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "No such argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' exists on this command");
         }
         auto& parsed = argument->second;
-        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType<CharT>>())) {
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
             throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<CharT, S, ArgType<CharT>>*)parsed.get())->GetResult();
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
     }
 
     template<typename CharT, typename S>
-    template<template<typename> typename ArgType>
-    typename ArgType<CharT>::type CommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value)
+    template<typename ArgType>
+    std::optional<typename ArgType::type> CommandContext<CharT, S>::GetArgumentOpt(std::basic_string_view<CharT> name)
+    {
+        auto argument = context->arguments.find(name);
+
+        if (argument == context->arguments.end()) {
+            return std::nullopt;
+        }
+        auto& parsed = argument->second;
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
+            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
+        }
+
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
+    }
+
+    template<typename CharT, typename S>
+    template<typename ArgType>
+    typename ArgType::type CommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value)
     {
         auto argument = context->arguments.find(name);
 
@@ -164,11 +196,11 @@ namespace brigadier
             return std::move(default_value);
         }
         auto& parsed = argument->second;
-        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType<CharT>>())) {
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
             throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<CharT, S, ArgType<CharT>>*)parsed.get())->GetResult();
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
     }
 
     template<typename CharT, typename S>

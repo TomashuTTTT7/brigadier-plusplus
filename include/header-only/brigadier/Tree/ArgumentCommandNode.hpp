@@ -55,7 +55,7 @@ namespace brigadier
     public:
         virtual std::basic_string<CharT> GetUsageText() {
             std::basic_string<CharT> ret;
-            constexpr auto typeName = T::GetTypeName();
+            constexpr auto typeName = T::template GetTypeName<CharT>();
             ret.reserve(this->name.size() + USAGE_ARGUMENT_OPEN.size() + USAGE_ARGUMENT_CLOSE.size() + typeName.size() > 0 ? typeName.size() + 2 : 0);
             ret = USAGE_ARGUMENT_OPEN;
             if constexpr (typeName.size() > 0)
@@ -68,7 +68,7 @@ namespace brigadier
             return ret;
         }
         virtual std::vector<std::basic_string_view<CharT>> GetExamples() {
-            return type.GetExamples();
+            return type.template GetExamples<CharT>();
         }
         virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {
             size_t start = reader.GetCursor();
@@ -82,7 +82,7 @@ namespace brigadier
         virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             if (customSuggestions == nullptr) {
-                return type.template ListSuggestions<S>(context, builder);
+                return type.template ListSuggestions<CharT, S>(context, builder);
             }
             else {
                 return customSuggestions(context, builder);

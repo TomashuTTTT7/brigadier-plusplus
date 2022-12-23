@@ -8,9 +8,9 @@ namespace brigadier
         TEST_METHOD(parse)
         {
             StringReaderW readert(L"true");
-            Assert::AreEqual(BoolArgumentType<wchar_t>().Parse(readert), true);
+            Assert::AreEqual(BoolArgumentType().Parse(readert), true);
             StringReaderW readerf(L"false");
-            Assert::AreEqual(BoolArgumentType<wchar_t>().Parse(readerf), false);
+            Assert::AreEqual(BoolArgumentType().Parse(readerf), false);
         }
     };
 
@@ -20,16 +20,16 @@ namespace brigadier
         TEST_METHOD(parse)
         {
             StringReaderW reader(L"15");
-            Assert::AreEqual(Double<wchar_t>().Parse(reader), 15.0);
+            Assert::AreEqual(Double().Parse(reader), 15.0);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Float<wchar_t>().Parse(reader), 15.f);
+            Assert::AreEqual(Float().Parse(reader), 15.f);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Integer<wchar_t>().Parse(reader), 15);
+            Assert::AreEqual(Integer().Parse(reader), 15);
             Assert::AreEqual(reader.CanRead(), false);
             reader.SetCursor(0);
-            Assert::AreEqual(Long<wchar_t>().Parse(reader), 15ll);
+            Assert::AreEqual(Long().Parse(reader), 15ll);
             Assert::AreEqual(reader.CanRead(), false);
         }
 
@@ -37,25 +37,25 @@ namespace brigadier
         {
             StringReaderW reader(L"-5");
             try {
-                Double<wchar_t>(0, 100).Parse(reader);
+                Double(0, 100).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Float<wchar_t>(0, 100).Parse(reader);
+                Float(0, 100).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Integer<wchar_t>(0, 100).Parse(reader);
+                Integer(0, 100).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Long<wchar_t>(0, 100).Parse(reader);
+                Long(0, 100).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
@@ -66,25 +66,25 @@ namespace brigadier
         {
             StringReaderW reader(L"5");
             try {
-                Double<wchar_t>(-100, 0).Parse(reader);
+                Double(-100, 0).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Float<wchar_t>(-100, 0).Parse(reader);
+                Float(-100, 0).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Integer<wchar_t>(-100, 0).Parse(reader);
+                Integer(-100, 0).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
             catch (...) { Assert::Fail(); }
             try {
-                Long<wchar_t>(-100, 0).Parse(reader);
+                Long(-100, 0).Parse(reader);
                 Assert::Fail();
             }
             catch (CommandSyntaxExceptionW const& ex) { Assert::AreEqual<size_t>(ex.GetCursor(), 0); }
