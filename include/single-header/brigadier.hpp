@@ -41,9 +41,6 @@ SOFTWARE.
 #include <type_traits>
 #include <vector>
 
-// string type
-// macro for creating specializations for basic
-
 #pragma once
 
 #define BRIGADIER_PACK(...) __VA_ARGS__
