@@ -7,7 +7,7 @@ namespace brigadier
     {
         TEST_METHOD(TypeInfoTest)
         {
-            std::set<size_t> hashes;
+            std::set<TypeInfo> hashes;
 
             hashes.insert(TypeInfo::Create<char, String>());
             hashes.insert(TypeInfo::Create<char, Word>());

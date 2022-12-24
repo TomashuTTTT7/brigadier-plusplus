@@ -6,15 +6,17 @@ namespace brigadier
 {
     struct TypeInfo
     {
-        TypeInfo(size_t hash) : hash(hash) {}
+        constexpr TypeInfo(void* typeName, size_t sizes) : typeName(typeName), sizes(sizes) {}
         template<typename CharT, typename ArgType>
-        static constexpr size_t Create() { return (((uintptr_t)((void*)ArgType::template GetTypeName<CharT>().data())) + (sizeof(typename ArgType::type) << 24) + (sizeof(ArgType) << 8)); }
+        static constexpr TypeInfo Create() { return TypeInfo((void*)ArgType::template GetTypeName<CharT>().data(), (sizeof(typename ArgType::type) << 16) + sizeof(ArgType)); }
         template<typename CharT, template<typename> typename ArgType>
-        inline static constexpr size_t Create() { return Create<CharT, ArgType<CharT>>(); }
-        inline bool operator==(TypeInfo const& other) { return hash == other.hash; }
-        inline bool operator!=(TypeInfo const& other) { return hash != other.hash; }
-        size_t hash = 0;
+        inline static constexpr TypeInfo Create() { return Create<CharT, ArgType<CharT>>(); }
+        inline bool operator==(TypeInfo const& other) { return (typeName == other.typeName) && (sizes == other.sizes); }
+        inline bool operator!=(TypeInfo const& other) { return !(*this == other); }
+        void* typeName = nullptr;
+        size_t sizes = 0;
     };
+    inline bool operator<(TypeInfo const& lhs, TypeInfo const& rhs) { return (lhs.typeName == rhs.typeName) ? lhs.sizes < rhs.sizes : lhs.typeName < rhs.typeName; }
 
     template<typename CharT, typename S>
     class IParsedArgument
