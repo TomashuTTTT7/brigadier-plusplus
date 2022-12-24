@@ -254,18 +254,9 @@ def acme(toplevel_file, output) -> List[str]:
         # verbatim. There's always at least one element, using a two-element
         # list instead of a tuple so I can modify the entries
         branch_stack = [[True, True, 0]]
-
-        bline: bytes
-        with open(file, 'rb') as f:
-            # We don't handle BOMs, but let the user know that clearly
-            bom = f.read(len(codecs.BOM_UTF8))
-            if bom == codecs.BOM_UTF8:
-                raise ValueError("{} contains a BOM, this is ABSOLUTELY unacceptable".format(file))
-            f.seek(0)
-
-            for bline in f:
-                line: str = bline.decode('utf-8')
-
+        
+        with open(file, 'r') as f:
+            for line in f:
                 # Buffer the comments and put them in the output at the end
                 if in_comment:
                     # End of the comment, write the buffered contents if they
