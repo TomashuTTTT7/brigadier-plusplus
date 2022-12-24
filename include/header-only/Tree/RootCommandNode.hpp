@@ -397,7 +397,7 @@ namespace brigadier
                         throw exceptions::DispatcherExpectedArgumentSeparator(reader);
                     }
                 }
-                catch (CommandSyntaxException<CharT> ex) {
+                catch (CommandSyntaxException<CharT> const& ex) {
                     result.exceptions.emplace(child.get(), std::move(ex));
                     reader.SetCursor(cursor);
                     continue;

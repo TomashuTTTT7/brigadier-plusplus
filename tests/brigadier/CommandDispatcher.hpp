@@ -231,7 +231,7 @@ namespace brigadier
 
         TEST_METHOD(testExecuteOrphanedSubcommand) {
             RootCommandNodeW<int> subject;
-            auto& foo = subject.Then(L"foo").Executes(command).Then<Integer>(L"bar");
+            subject.Then(L"foo").Executes(command).Then<Integer>(L"bar");
 
             try {
                 subject.Execute(L"foo 5", source);
@@ -616,7 +616,7 @@ namespace brigadier
             actualOne.Then(L"fbz");
             actualOne.Then(L"gaz");
 
-            auto& actualTwo = subject.Then(L"actual_two");
+            subject.Then(L"actual_two");
 
             subject.Then(L"redirect_one").Redirect(actualOne);
             subject.Then(L"redirect_two").Redirect(actualOne);

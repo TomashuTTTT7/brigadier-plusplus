@@ -86,11 +86,11 @@ namespace brigadier
         }
         virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
-            if (customSuggestions == nullptr) {
+            if (this->customSuggestions == nullptr) {
                 return type.template ListSuggestions<CharT, S>(context, builder);
             }
             else {
-                return customSuggestions(context, builder);
+                return this->customSuggestions(context, builder);
             }
         }
     protected:
