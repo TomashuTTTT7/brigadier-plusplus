@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tests\brigadier_header_only_test.cpp" />
+    <ClCompile Include="tests\brigadier_single_header_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentRegister.hpp" />
     <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentType.hpp" />
+    <ClInclude Include="include\header-only\brigadier\brigadier.hpp" />
     <ClInclude Include="include\header-only\brigadier\Builder\ArgumentBuilder.hpp" />
     <ClInclude Include="include\header-only\brigadier\Builder\LiteralArgumentBuilder.hpp" />
     <ClInclude Include="include\header-only\brigadier\Builder\MultiArgumentBuilder.hpp" />
@@ -46,6 +48,7 @@
     <ClInclude Include="include\header-only\brigadier\Tree\CommandNode.hpp" />
     <ClInclude Include="include\header-only\brigadier\Tree\LiteralCommandNode.hpp" />
     <ClInclude Include="include\header-only\brigadier\Tree\RootCommandNode.hpp" />
+    <ClInclude Include="include\single-header\brigadier.hpp" />
     <ClInclude Include="tests\brigadier\Arguments\ArgumentType.hpp" />
     <ClInclude Include="tests\brigadier\Builder\ArgumentBuilder.hpp" />
     <ClInclude Include="tests\brigadier\Builder\LiteralArgumentBuilder.hpp" />
@@ -67,6 +70,10 @@
     <ClInclude Include="tests\brigadier\Tree\RootCommandNode.hpp" />
     <ClInclude Include="tests\CommonTest.hpp" />
     <ClInclude Include="tests\TestAll.h" />
+    <ClInclude Include="utils\brigadier.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\header-only\brigadier\StringReader.hxx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -159,6 +166,13 @@
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>call python "$(SolutionDir)utils\acme.py" -o "$(SolutionDir)include\single-header\brigadier.hpp" "$(SolutionDir)utils\brigadier.hpp"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -174,6 +188,13 @@
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>call python "$(SolutionDir)utils\acme.py" -o "$(SolutionDir)include\single-header\brigadier.hpp" "$(SolutionDir)utils\brigadier.hpp"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -193,6 +214,13 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>call python "$(SolutionDir)utils\acme.py" -o "$(SolutionDir)include\single-header\brigadier.hpp" "$(SolutionDir)utils\brigadier.hpp"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -212,6 +240,13 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>call python "$(SolutionDir)utils\acme.py" -o "$(SolutionDir)include\single-header\brigadier.hpp" "$(SolutionDir)utils\brigadier.hpp"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

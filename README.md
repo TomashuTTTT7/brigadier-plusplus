@@ -9,7 +9,7 @@ IMPORTANT: brigadier-plusplus is not a one-to-one recreation of the original ver
 ## Installation
 Brigadier is written as a header-only library, so you can just copy the source code and include it in your project. There is also single-header version. There is no need for additional compilation. 
 
-- For header-only version: `#include "brigadier/CommandDispatcher.hpp"`
+- For header-only version: `#include "brigadier/brigadier.hpp"`
 - For single-header version: `#include "brigadier.hpp"`
 
 ### Additional info:

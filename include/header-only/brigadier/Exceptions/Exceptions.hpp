@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../StringReader.hpp"
+#include "../StringReader.hxx"
 
 namespace brigadier
 {

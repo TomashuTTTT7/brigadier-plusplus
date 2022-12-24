@@ -1,7 +1,6 @@
 /*
 MIT License
-
-Copyright (c) 2022 Tomasz Karpiñski
+Copyright (c) 2022 Tomasz Karpinski
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,225 +21,337 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+/* This file is generated from header-only version. Do not edit directly. */
+
 #pragma once
 
+#include <algorithm>
+#include <cstring>
+#include <future>
+#include <istream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
 #include <set>
+#include <streambuf>
 #include <string>
 #include <string_view>
-#include <cstring>
-#include <sstream>
-#include <vector>
-#include <memory>
-#include <map>
-#include <future>
 #include <tuple>
-#include <algorithm>
-#include <limits>
-#include <optional>
+#include <type_traits>
+#include <vector>
 
-// Following code makes that you don't have to specify command source type inside arguments.
-// Command source type is automatically distributed from dispatcher.
+// string type
+// macro for creating specializations for basic
 
-// Default registration for arguments with or without template, without specialization
-#define REGISTER_ARGTYPE(type, name)                                      \
-using name = type
+#pragma once
 
-// Registration for arguments with template parameters
-#define REGISTER_ARGTYPE_TEMPL(type, name)                                \
-template<typename... Args>                                                \
-using name = type<Args...>
+#define BRIGADIER_PACK(...) __VA_ARGS__
 
-// Registration for arguments with specialized templates
-#define REGISTER_ARGTYPE_SPEC(type, name, ...)                            \
-using name = type<__VA_ARGS__>
+namespace brigadier::detail
+{
+    template<size_t SZ0, size_t SZ1, size_t SZ2, size_t SZ3>
+    constexpr inline auto literal_type(char c,
+        const char(&s0)[SZ0],
+        const wchar_t(&s1)[SZ1],
+        const char16_t(&s2)[SZ2],
+        const char32_t(&s3)[SZ3]
+    ) -> const char(&)[SZ0]
+    {
+        return s0;
+    };
 
-// Registration for arguments with specialized templates and template parameters
-#define REGISTER_ARGTYPE_SPEC_TEMPL(type, name, ...)                      \
-template<typename... Args>                                                \
-using name = type<__VA_ARGS__, Args...>
+    template<size_t SZ0, size_t SZ1, size_t SZ2, size_t SZ3>
+    constexpr inline auto literal_type(wchar_t c,
+        const char(&s0)[SZ0],
+        const wchar_t(&s1)[SZ1],
+        const char16_t(&s2)[SZ2],
+        const char32_t(&s3)[SZ3]
+    ) -> const wchar_t(&)[SZ1]
+    {
+        return s1;
+    };
 
-#ifdef __has_include
-#  if __has_include("nameof.hpp")
-#    include "nameof.hpp"
-#    define HAS_NAMEOF
-#  endif
-#  if __has_include("magic_enum.hpp")
-#    include "magic_enum.hpp"
-#    define HAS_MAGICENUM
-#  endif
+    template<size_t SZ0, size_t SZ1, size_t SZ2, size_t SZ3>
+    constexpr inline auto literal_type(char16_t c,
+        const char(&s0)[SZ0],
+        const wchar_t(&s1)[SZ1],
+        const char16_t(&s2)[SZ2],
+        const char32_t(&s3)[SZ3]
+    ) -> const char16_t(&)[SZ2]
+    {
+        return s2;
+    };
+
+    template<size_t SZ0, size_t SZ1, size_t SZ2, size_t SZ3>
+    constexpr inline auto literal_type(char32_t c,
+        const char(&s0)[SZ0],
+        const wchar_t(&s1)[SZ1],
+        const char16_t(&s2)[SZ2],
+        const char32_t(&s3)[SZ3]
+    ) -> const char32_t(&)[SZ3]
+    {
+        return s3;
+    };
+
+    constexpr inline auto literal_type(char c, char s0, wchar_t s1, char16_t s2, char32_t s3) -> char
+    {
+        return s0;
+    };
+
+    constexpr inline auto literal_type(wchar_t c, char s0, wchar_t s1, char16_t s2, char32_t s3) -> wchar_t
+    {
+        return s1;
+    };
+
+    constexpr inline auto literal_type(char16_t c, char s0, wchar_t s1, char16_t s2, char32_t s3) -> char16_t
+    {
+        return s2;
+    };
+
+    constexpr inline auto literal_type(char32_t c, char s0, wchar_t s1, char16_t s2, char32_t s3) -> char32_t
+    {
+        return s3;
+    };
+}
+#define BRIGADIER_LITERAL(type, s_literal) brigadier::detail::literal_type(type(), s_literal, L##s_literal, u##s_literal, U##s_literal)
+
+#ifdef UNICODE
+#define BRIGADIER_SPECIALIZE_BASIC(type) \
+using type##A = type<char>;              \
+using type##T = type<wchar_t>;           \
+using type##W = type<wchar_t>;
+
+#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)                 \
+template<typename... Ts> using type##A = type<char, Ts...>;    \
+template<typename... Ts> using type##T = type<wchar_t, Ts...>; \
+template<typename... Ts> using type##W = type<wchar_t, Ts...>;
+
+#define BRIGADIER_SPECIALIZE_BASIC_ALIAS(type, tepl_list, templ_spec) \
+template<tepl_list> using type##A = type<char, templ_spec>;           \
+template<tepl_list> using type##T = type<wchar_t, templ_spec>;        \
+template<tepl_list> using type##W = type<wchar_t, templ_spec>;
+#else
+#define BRIGADIER_SPECIALIZE_BASIC(type) \
+using type##A = type<char>;              \
+using type##T = type<char>;              \
+using type##W = type<wchar_t>;
+
+#define BRIGADIER_SPECIALIZE_BASIC_TEMPL(type)               \
+template<typename... Ts> using type##A = type<char, Ts...>;  \
+template<typename... Ts> using type##T = type<char, Ts...>;  \
+template<typename... Ts> using type##W = type<wchar_t, Ts...>;
+
+#define BRIGADIER_SPECIALIZE_BASIC_ALIAS(type, tepl_list, templ_spec) \
+template<tepl_list> using type##A = type<char, templ_spec>;           \
+template<tepl_list> using type##T = type<char, templ_spec>;           \
+template<tepl_list> using type##W = type<wchar_t, templ_spec>;
 #endif
+#pragma once
 
 namespace brigadier
 {
-    template<typename S>
-    class CommandNode;
-    template<typename S>
-    class CommandContext;
+    template<typename CharT, typename traits = std::char_traits<CharT>>
+    class basic_stringviewbuf : public std::basic_streambuf<CharT, traits>
+    {
+        using base = std::basic_streambuf<CharT, traits>;
+    protected:
+        typename base::pos_type seekoff(typename base::off_type off, std::ios_base::seekdir dir, std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) override
+        {
+            if (dir == std::ios_base::cur)
+                this->gbump((int)off);
+            else if (dir == std::ios_base::end)
+                this->setg(this->eback(), this->egptr() + off, this->egptr());
+            else if (dir == std::ios_base::beg)
+                this->setg(this->eback(), this->eback() + off, this->egptr());
+            return this->gptr() - this->eback();
+        }
 
-    template<typename S>
-    class IArgumentCommandNode;
-    template<typename S>
-    class LiteralCommandNode;
-    template<typename S>
-    class RootCommandNode;
-    template<typename S>
-    class CommandDispatcher;
+        typename base::pos_type seekpos(typename base::pos_type sp, std::ios_base::openmode which) override {
+            return seekoff(sp - typename base::pos_type(typename base::off_type(0)), std::ios_base::beg, which);
+        }
+    public:
+        basic_stringviewbuf(CharT const* s, size_t count) {
+            auto p = const_cast<CharT*>(s);
+            this->setg(p, p, p + count);
+        }
+        basic_stringviewbuf(std::basic_string_view<CharT> s) : basic_stringviewbuf(s.data(), s.size()) {}
+    };
+    using stringviewbuf = basic_stringviewbuf<char>;
+    using wstringviewbuf = basic_stringviewbuf<wchar_t>;
 
-    template<typename S, typename T, typename node_type>
-    class ArgumentBuilder;
-    template<typename S>
-    class MultiArgumentBuilder;
-    template<typename S>
-    class LiteralArgumentBuilder;
-    template<typename S, typename T>
-    class RequiredArgumentBuilder;
+    template<typename CharT, typename traits = std::char_traits<CharT>>
+    class basic_istringviewstream : public std::basic_istream<CharT, traits> {
+    public:
+        basic_istringviewstream(std::basic_string_view<CharT> s) : std::basic_istream<CharT, traits>(&buf), buf(s) {}
+    private:
+        basic_stringviewbuf<CharT, traits> buf;
+    };
+    using istringviewstream = basic_istringviewstream<char>;
+    using wistringviewstream = basic_istringviewstream<wchar_t>;
 
-
+    template<typename CharT>
     class StringReader
     {
     private:
-        static constexpr char SYNTAX_ESCAPE = '\\';
-        static constexpr char SYNTAX_SINGLE_QUOTE = '\'';
-        static constexpr char SYNTAX_DOUBLE_QUOTE = '"';
-
+        static constexpr CharT SYNTAX_ESCAPE = CharT('\\');
+        static constexpr CharT SYNTAX_SINGLE_QUOTE = CharT('\'');
+        static constexpr CharT SYNTAX_DOUBLE_QUOTE = CharT('\"');
     public:
-        StringReader(std::string_view string) : string(string) {}
+        StringReader(std::basic_string_view<CharT> string) : string(string) {}
         StringReader() {}
 
-        inline std::string_view GetString()           const { return string; }
-        inline void             SetCursor(int cursor)       { this->cursor = cursor; }
-        inline int              GetRemainingLength()  const { return string.length() - cursor; }
-        inline int              GetTotalLength()      const { return string.length(); }
-        inline int              GetCursor()           const { return cursor; }
-        inline std::string_view GetRead()             const { return string.substr(0, cursor); }
-        inline std::string_view GetRemaining()        const { return string.substr(cursor); }
-        inline bool             CanRead(int length)   const { return (size_t)(cursor + length) <= string.length(); }
-        inline bool             CanRead()             const { return CanRead(1); }
-        inline char             Peek()                const { return Peek(0); }
-        inline char             Peek(int offset)      const { return string.at(cursor + offset); }
-        inline char             Read()                      { return string.at(cursor++); }
-        inline void             Skip()                      { cursor++; }
-
-        inline static bool IsQuotedStringStart(char c)
-        {
-            return c == SYNTAX_DOUBLE_QUOTE || c == SYNTAX_SINGLE_QUOTE;
-        }
-
-        inline void SkipWhitespace()
-        {
+        inline std::basic_string_view<CharT> GetString()                const { return string; }
+        inline void                          SetCursor(size_t cursor) { this->cursor = cursor; }
+        inline ptrdiff_t                     GetRemainingLength()       const { return string.length() - cursor; }
+        inline size_t                        GetTotalLength()           const { return string.length(); }
+        inline size_t                        GetCursor()                const { return cursor; }
+        inline std::basic_string_view<CharT> GetRead()                  const { return string.substr(0, cursor); }
+        inline std::basic_string_view<CharT> GetRemaining()             const { return string.substr(cursor); }
+        inline bool                          CanRead(size_t length = 1) const { return (cursor + length) <= string.length(); }
+        inline CharT                         Peek(size_t offset = 0)    const { return string.at(cursor + offset); }
+        inline CharT                         Read() { return string.at(cursor++); }
+        inline void                          Skip() { cursor++; }
+    public:
+        inline void SkipWhitespace() {
             while (CanRead() && std::isspace(Peek())) {
                 Skip();
             }
         }
-
+    public:
+        inline std::basic_string_view<CharT> ReadUnquotedString();
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntil(CharT terminator); // Terminator is skipped
+        inline std::basic_string_view<CharT> ReadUnquotedStringUntilOneOf(CharT const* terminators); // Terminator is skipped
+        inline std::basic_string<CharT>      ReadString();
+        inline std::basic_string<CharT>      ReadStringUntil(CharT terminator); // Terminator is skipped
+        inline std::basic_string<CharT>      ReadStringUntilOneOf(CharT const* terminators); // Terminator is skipped
+        inline std::basic_string<CharT>      ReadQuotedString();
+        inline void                          Expect(CharT c);
+    private:
         template<typename T>
-        inline T ReadValue();
-
-        inline static bool IsAllowedInUnquotedString(char c)
-        {
-            return (c >= '0' && c <= '9')
-                || (c >= 'A' && c <= 'Z')
-                || (c >= 'a' && c <= 'z')
-                || (c == '_' || c == '-')
-                || (c == '.' || c == '+');
+        T ParseValue(std::basic_string_view<CharT> value, size_t start);
+    public:
+        template<typename T>
+        T ReadValue();
+    public:
+        inline static bool IsAllowedInUnquotedString(CharT c) {
+            return (c >= CharT('0') && c <= CharT('9'))
+                || (c >= CharT('A') && c <= CharT('Z'))
+                || (c >= CharT('a') && c <= CharT('z'))
+                || (c == CharT('_') || c == CharT('-'))
+                || (c == CharT('.') || c == CharT('+'));
         }
-
+        inline static bool IsQuotedStringStart(CharT c) {
+            return c == SYNTAX_DOUBLE_QUOTE || c == SYNTAX_SINGLE_QUOTE;
+        }
         template<bool allow_float = true, bool allow_negative = true>
-        inline static bool IsAllowedNumber(char c)
-        {
-            return c >= '0' && c <= '9' || (allow_float && c == '.') || (allow_negative && c == '-');
+        inline static bool IsAllowedNumber(CharT c) {
+            return (c >= CharT('0') && c <= CharT('9')) || (allow_float && c == CharT('.')) || (allow_negative && c == CharT('-'));
         }
-
-        inline std::string_view ReadUnquotedString();
-        inline std::string      ReadQuotedString();
-        inline std::string      ReadStringUntil(char terminator);
-        inline std::string      ReadString();
-        inline void             Expect(char c);
-
     private:
-        std::string_view string;
-        int cursor = 0;
+        std::basic_string_view<CharT> string;
+        size_t cursor = 0;
     };
+    BRIGADIER_SPECIALIZE_BASIC(StringReader);
+}
+#pragma once
 
-    
-    class BuiltInExceptionProvider;
-
-    struct ExceptionContext
-    {
-        ExceptionContext(std::nullptr_t) {}
-        ExceptionContext() {}
-        ExceptionContext(StringReader const& reader) : input(reader.GetString()), cursor(reader.GetCursor()) {}
-        std::string_view input;
-        int cursor = -1;
-    };
-
-    class CommandSyntaxException
-    {
+namespace brigadier
+{
+    template<typename CharT, typename E>
+    class Exception {
     public:
-        static inline const int context_amount = 10;
-        using BuiltInExceptions = BuiltInExceptionProvider;
-        template<typename... Args>
-        CommandSyntaxException(ExceptionContext ctx, Args&&... args) : ctx(ctx), msg(std::move(CreateMessageApplyContext(ctx, args...))) {}
-        std::string const& What() { return msg; }
-    private:
+        Exception() {}
+        Exception(Exception&&) = default;
+        Exception(Exception const& that) {
+            this->message << that.message.str();
+        }
+    public:
         template<typename T>
-        static inline void Add(std::ostringstream& stream, T&& value)
-        {
-            stream << value;
-        }
-        template<typename T, typename... Args>
-        static inline void Add(std::ostringstream& stream, T&& value, Args&&... args)
-        {
-            stream << value;
-            Add(stream, args...);
-        }
-        template<typename... Args>
-        static inline std::string CreateMessage(Args&&... args)
-        {
-            std::ostringstream s;
-            Add(s, args...);
-            return s.str();
-        }
-        template<typename... Args>
-        static inline std::string CreateMessageApplyContext(ExceptionContext ctx, Args&&... args)
-        {
-            if (ctx.cursor < 0) return CreateMessage(args...);
-            else return CreateMessage(args..., " at position ", ctx.cursor, ": ", ctx.cursor > context_amount ? "..." : "", ctx.input.substr((std::max)(0, ctx.cursor - context_amount), context_amount), "<--[HERE]");
+        E&& operator<<(T&& arg)&& {
+            message << arg;
+            return std::move(*static_cast<E*>(this));
         }
     public:
-        int GetCursor() const
-        {
-            return ctx.cursor;
+        std::basic_string<CharT> What() const {
+            return message.str();
         }
-        std::string_view GetInput() const
-        {
-            return ctx.input;
+    protected:
+        std::basic_ostringstream<CharT> message;
+    };
+
+    template<typename CharT>
+    class RuntimeError : public Exception<CharT, RuntimeError<CharT>> {};
+    BRIGADIER_SPECIALIZE_BASIC(RuntimeError);
+
+    static constexpr size_t default_context_amount = 10;
+
+    template<typename CharT>
+    class CommandSyntaxException : public Exception<CharT, CommandSyntaxException<CharT>> {
+    public:
+        CommandSyntaxException(StringReader<CharT> context) : context(context) {}
+        CommandSyntaxException(std::nullptr_t) {}
+        CommandSyntaxException() {}
+        CommandSyntaxException(CommandSyntaxException&&) = default;
+        CommandSyntaxException(CommandSyntaxException const& that) {
+            this->context = that.context;
         }
+        //virtual ~CommandSyntaxException() = default;
+    public:
+        inline StringReader<CharT> const& GetContext() const { return context; }
+        inline size_t GetCursor() const { return context.GetCursor(); }
+        inline std::basic_string_view<CharT> GetString() const { return context.GetString(); }
     private:
-        ExceptionContext ctx;
-        std::string msg;
-    };
-
-    class BuiltInExceptionProvider
-    {
+        void DescribeContext(size_t context_amount) {
+            if (!context.GetString().empty()) {
+                size_t cursor = context->GetCursor();
+                message << BRIGADIER_LITERAL(CharT, " at position ");
+                message << cursor;
+                message << BRIGADIER_LITERAL(CharT, ": ");
+                if (cursor > context_amount)
+                    message << BRIGADIER_LITERAL(CharT, "...");
+                message << context.GetString().substr(cursor > context_amount ? cursor - context_amount : 0, context_amount);
+                message << BRIGADIER_LITERAL(CharT, "<--[HERE]");
+            }
+        }
+        //virtual void DescribeException() {}
     public:
-        template<typename T0, typename T1> static inline CommandSyntaxException ValueTooLow                        (ExceptionContext ctx, T0 found, T1 min)    { return CommandSyntaxException(ctx, "Value must not be less than ", min, ", found ", found); }
-        template<typename T0, typename T1> static inline CommandSyntaxException ValueTooHigh                       (ExceptionContext ctx, T0 found, T1 max)    { return CommandSyntaxException(ctx, "Value must not be more than ", max, ", found ", found); }
-        template<typename T0>              static inline CommandSyntaxException LiteralIncorrect                   (ExceptionContext ctx, T0 const& expected)  { return CommandSyntaxException(ctx, "Expected literal ", expected); }
-                                           static inline CommandSyntaxException ReaderExpectedStartOfQuote         (ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Expected quote to start a string"); }
-                                           static inline CommandSyntaxException ReaderExpectedEndOfQuote           (ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Unclosed quoted string"); }
-        template<typename T0>              static inline CommandSyntaxException ReaderInvalidEscape                (ExceptionContext ctx, T0 const& character) { return CommandSyntaxException(ctx, "Invalid escape sequence '", character, "' in quoted string"); }
-        template<typename T0>              static inline CommandSyntaxException ReaderInvalidValue                 (ExceptionContext ctx, T0 const& value)     { return CommandSyntaxException(ctx, "Invalid value '", value, "'"); }
-                                           static inline CommandSyntaxException ReaderExpectedValue                (ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Expected value"); }
-        template<typename T0>              static inline CommandSyntaxException ReaderExpectedSymbol               (ExceptionContext ctx, T0 const& symbol)    { return CommandSyntaxException(ctx, "Expected '", symbol, "'"); }
-        template<typename T0>              static inline CommandSyntaxException ReaderExpectedOneOf                (ExceptionContext ctx, T0 const& symbols)   { return CommandSyntaxException(ctx, "Expected one of `", symbols, "`"); }
-                                           static inline CommandSyntaxException DispatcherUnknownCommand           (ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Unknown command"); }
-                                           static inline CommandSyntaxException DispatcherUnknownArgument          (ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Incorrect argument for command"); }
-                                           static inline CommandSyntaxException DispatcherExpectedArgumentSeparator(ExceptionContext ctx)                      { return CommandSyntaxException(ctx, "Expected whitespace to end one argument, but found trailing data"); }
-        template<typename T0>              static inline CommandSyntaxException DispatcherParseException           (ExceptionContext ctx, T0 const& message)   { return CommandSyntaxException(ctx, "Could not parse command: ", message); }
+        std::basic_string<CharT> What(size_t context_amount = default_context_amount) {
+            //DescribeException();
+            DescribeContext(context_amount);
+            return Exception<CharT, CommandSyntaxException<CharT>>::What();
+        }
+    protected:
+        StringReader<CharT> context;
     };
+    BRIGADIER_SPECIALIZE_BASIC(CommandSyntaxException);
 
-    std::string_view StringReader::ReadUnquotedString()
+    namespace exceptions
+    {
+        template<typename CharT, typename T0, typename T1> static inline CommandSyntaxException<CharT> ValueTooLow                        (StringReader<CharT> ctx, T0 found, T1 min)    { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Value must not be less than ") << min << BRIGADIER_LITERAL(CharT, ", found ") << found; }
+        template<typename CharT, typename T0, typename T1> static inline CommandSyntaxException<CharT> ValueTooHigh                       (StringReader<CharT> ctx, T0 found, T1 max)    { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Value must not be more than ") << max << BRIGADIER_LITERAL(CharT, ", found ") << found; }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> LiteralIncorrect                   (StringReader<CharT> ctx, T0 const& expected)  { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected literal ") << expected; }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> ReaderExpectedStartOfQuote         (StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected quote to start a string"); }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> ReaderExpectedEndOfQuote           (StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Unclosed quoted string"); }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> ReaderInvalidEscape                (StringReader<CharT> ctx, T0 const& character) { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Invalid escape sequence '") << character << BRIGADIER_LITERAL(CharT, "' in quoted string"); }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> ReaderInvalidValue                 (StringReader<CharT> ctx, T0 const& value)     { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Invalid value '") << value << CharT('\''); }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> ReaderExpectedValue                (StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected value"); }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> ReaderExpectedSymbol               (StringReader<CharT> ctx, T0 const& symbol)    { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected '") << symbol << CharT('\''); }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> ReaderExpectedOneOf                (StringReader<CharT> ctx, T0 const& symbols)   { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected one of `") << symbols << CharT('`'); }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> DispatcherUnknownCommand           (StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Unknown command"); }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> DispatcherUnknownArgument          (StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Incorrect argument for command"); }
+        template<typename CharT>                           static inline CommandSyntaxException<CharT> DispatcherExpectedArgumentSeparator(StringReader<CharT> ctx)                      { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Expected whitespace to end one argument, but found trailing data"); }
+        template<typename CharT, typename T0>              static inline CommandSyntaxException<CharT> DispatcherParseException           (StringReader<CharT> ctx, T0 const& message)   { return CommandSyntaxException<CharT>(std::move(ctx)) << BRIGADIER_LITERAL(CharT, "Could not parse command: ") << message; }
+    }
+}
+#pragma once
+
+// see StringReader.hxx for class body
+
+namespace brigadier
+{
+    template<typename CharT>
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedString()
     {
         size_t start = cursor;
         while (CanRead() && IsAllowedInUnquotedString(Peek())) {
@@ -249,27 +360,62 @@ namespace brigadier
         return string.substr(start, cursor - start);
     }
 
-    std::string StringReader::ReadQuotedString()
+    template<typename CharT>
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedStringUntil(CharT terminator)
+    {
+        size_t start = cursor;
+        while (CanRead()) {
+            CharT c = Peek();
+            if (!IsAllowedInUnquotedString(c))
+                break;
+            if (c == terminator)
+                return string.substr(start, (cursor++) - start);
+            Skip();
+        }
+        return string.substr(start, cursor - start);
+    }
+
+    template<typename CharT>
+    std::basic_string_view<CharT> StringReader<CharT>::ReadUnquotedStringUntilOneOf(CharT const* terminators)
+    {
+        size_t start = cursor;
+        while (CanRead()) {
+            CharT c = Peek();
+            if (!IsAllowedInUnquotedString(c))
+                break;
+            for (CharT const* t = terminators; *t != 0; t++) {
+                if (c == *t) {
+                    return string.substr(start, (cursor++) - start);
+                }
+            }
+            Skip();
+        }
+        return string.substr(start, cursor - start);
+    }
+
+    template<typename CharT>
+    std::basic_string<CharT> StringReader<CharT>::ReadString()
     {
         if (!CanRead()) {
             return {};
         }
-        char next = Peek();
-        if (!IsQuotedStringStart(next)) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedStartOfQuote(*this);
+        CharT next = Peek();
+        if (IsQuotedStringStart(next)) {
+            Skip();
+            return ReadStringUntil(next);
         }
-        Skip();
-        return ReadStringUntil(next);
+        return std::basic_string<CharT>(ReadUnquotedString());
     }
 
-    std::string StringReader::ReadStringUntil(char terminator)
+    template<typename CharT>
+    std::basic_string<CharT> StringReader<CharT>::ReadStringUntil(CharT terminator)
     {
-        std::string result;
+        std::basic_string<CharT> result;
         result.reserve(GetRemainingLength());
 
         bool escaped = false;
         while (CanRead()) {
-            char c = Read();
+            CharT c = Read();
             if (escaped) {
                 if (c == terminator || c == SYNTAX_ESCAPE) {
                     result += c;
@@ -277,7 +423,7 @@ namespace brigadier
                 }
                 else {
                     SetCursor(GetCursor() - 1);
-                    throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidEscape(*this, c);
+                    throw exceptions::ReaderInvalidEscape(*this, c);
                 }
             }
             else if (c == SYNTAX_ESCAPE) {
@@ -291,129 +437,205 @@ namespace brigadier
             }
         }
 
-        throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedEndOfQuote(*this);
+        if (IsQuotedStringStart(terminator)) {
+            throw exceptions::ReaderExpectedEndOfQuote(*this);
+        }
+        else {
+            throw exceptions::ReaderExpectedSymbol(*this, terminator);
+        }
     }
 
-    std::string StringReader::ReadString()
+    template<typename CharT>
+    std::basic_string<CharT> StringReader<CharT>::ReadStringUntilOneOf(CharT const* terminators)
+    {
+        std::basic_string<CharT> result;
+        result.reserve(GetRemainingLength());
+
+        bool escaped = false;
+        while (CanRead()) {
+            CharT c = Read();
+            if (escaped) {
+                if (c == SYNTAX_ESCAPE) {
+                    result += c;
+                    escaped = false;
+                }
+                else for (CharT const* t = terminators; *t != 0; t++) {
+                    if (c == *t) {
+                        result += c;
+                        escaped = false;
+                        break;
+                    }
+                }
+                if (escaped) {
+                    SetCursor(GetCursor() - 1);
+                    throw exceptions::ReaderInvalidEscape(*this, c);
+                }
+            }
+            else if (c == SYNTAX_ESCAPE) {
+                escaped = true;
+            }
+            else {
+                for (CharT const* t = terminators; *t != 0; t++) {
+                    if (c == *t) {
+                        return result;
+                    }
+                }
+                result += c;
+            }
+        }
+
+        throw exceptions::ReaderExpectedOneOf(*this, terminators);
+    }
+
+    template<typename CharT>
+    std::basic_string<CharT> StringReader<CharT>::ReadQuotedString()
     {
         if (!CanRead()) {
             return {};
         }
-        char next = Peek();
-        if (IsQuotedStringStart(next)) {
-            Skip();
-            return ReadStringUntil(next);
+        CharT next = Peek();
+        if (!IsQuotedStringStart(next)) {
+            throw exceptions::ReaderExpectedStartOfQuote(*this);
         }
-        return std::string(ReadUnquotedString());
+        Skip();
+        return ReadStringUntil(next);
     }
 
-    void StringReader::Expect(char c)
+    template<typename CharT>
+    void StringReader<CharT>::Expect(CharT c)
     {
         if (!CanRead() || Peek() != c) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedSymbol(*this, c);
+            throw exceptions::ReaderExpectedSymbol(*this, c);
         }
         Skip();
     }
 
+    template<typename CharT>
     template<typename T>
-    T StringReader::ReadValue()
+    T StringReader<CharT>::ParseValue(std::basic_string_view<CharT> value, size_t start)
     {
-        int start = cursor;
-        std::string value;
-        if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
-        {
-            while (CanRead() && IsAllowedNumber<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
-                Skip();
-            }
-            value = string.substr(start, cursor - start);
-        }
-        else
-        {
-            value = ReadString();
-        }
-
         if (value.empty()) {
-            throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedValue(*this);
+            throw exceptions::ReaderExpectedValue(*this);
         }
 
-        if constexpr (std::is_same_v<T, bool>)
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>)
         {
-            /**/ if (value == "true")
+            /**/ if (value == BRIGADIER_LITERAL(CharT, "true"))
                 return true;
-            else if (value == "false")
+            else if (value == BRIGADIER_LITERAL(CharT, "false"))
                 return false;
-            else
-            {
+            else {
                 cursor = start;
-                throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidValue(*this, value);
+                throw exceptions::ReaderInvalidValue(*this, value);
             }
         }
         else
         {
             T ret{};
-            std::istringstream s(value);
+            //std::basic_istringstream<CharT> s(std::basic_string<CharT>(value));
+            basic_istringviewstream<CharT> s(value);
             s >> ret;
 
             if (s.eof() && !s.bad() && !s.fail())
                 return ret;
-            else
-            {
+            else {
                 cursor = start;
-                throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidValue(*this, value);
+                throw exceptions::ReaderInvalidValue(*this, value);
             }
         }
     }
 
+    template<typename CharT>
+    template<typename T>
+    T StringReader<CharT>::ReadValue()
+    {
+        if (!CanRead()) {
+            throw exceptions::ReaderExpectedValue(*this);
+        }
+
+        size_t start = cursor;
+
+        if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>)
+        {
+            while (CanRead() && IsAllowedNumber<std::is_floating_point_v<T>, std::is_signed_v<T>>(Peek())) {
+                Skip();
+            }
+            return ParseValue<T>(string.substr(start, cursor - start), start);
+        }
+        else
+        {
+            CharT next = Peek();
+            if (IsQuotedStringStart(next)) {
+                Skip();
+                return ParseValue<T>(ReadStringUntil(next), start);
+            }
+            return ParseValue<T>(ReadUnquotedString(), start);
+        }
+    }
+}
+#pragma once
+
+namespace brigadier
+{
     class StringRange
     {
     public:
-        StringRange(int start, const int end) : start(start), end(end) {}
+        StringRange(size_t start, size_t end) : start(start), end(end) {}
 
-        inline int GetStart() const { return start; }
-        inline int GetEnd()   const { return end; }
+        inline size_t GetStart() const { return start; }
+        inline size_t GetEnd()   const { return end;   }
 
-        inline static StringRange At(int pos) { return StringRange(pos, pos); }
-        inline static StringRange Between(int start, const int end) { return StringRange(start, end); }
+        inline static StringRange At(size_t pos) { return StringRange(pos, pos); }
+        inline static StringRange Between(size_t start, size_t end) { return StringRange(start, end); }
         inline static StringRange Encompassing(StringRange const& a, StringRange const& b) {
             return StringRange((std::min)(a.GetStart(), b.GetStart()), (std::max)(a.GetEnd(), b.GetEnd()));
         }
 
-        inline std::string_view Get(StringReader reader) const {
+        template<typename CharT>
+        inline std::basic_string_view<CharT> Get(StringReader<CharT> reader) const {
             return reader.GetString().substr(start, end - start);
         }
-        inline std::string_view Get(std::string_view string) const {
+        template<typename CharT>
+        inline std::basic_string_view<CharT> Get(std::basic_string_view<CharT> string) const {
             return string.substr(start, end - start);
         }
 
-        inline bool IsEmpty()   const { return start == end; }
-        inline int  GetLength() const { return end - start; }
+        inline bool      IsEmpty()   const { return start == end; }
+        inline ptrdiff_t GetLength() const { return end - start;  }
 
         inline bool operator==(StringRange const& other) const { return (start == other.start && end == other.end); }
     private:
-        int start = 0;
-        int end = 0;
+        size_t start = 0;
+        size_t end = 0;
     };
+}
+#pragma once
 
+namespace brigadier
+{
+    template<typename CharT>
     class Suggestions;
+    template<typename CharT>
     class SuggestionsBuilder;
 
+    template<typename CharT>
     class Suggestion
     {
     public:
-        Suggestion(StringRange range, std::string_view text, std::string_view tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        Suggestion(StringRange range, std::string_view text) : range(std::move(range)), text(std::move(text)) {}
+        Suggestion(StringRange range, std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        Suggestion(StringRange range, std::basic_string_view<CharT> text) : range(std::move(range)), text(std::move(text)) {}
 
         inline StringRange GetRange() const { return range; }
-        inline std::string const& GetText() const { return text; }
-        inline std::string_view GetTooltip() const { return tooltip; }
+        inline std::basic_string<CharT> const& GetText() const { return text; }
+        inline std::basic_string_view<CharT> GetTooltip() const { return tooltip; }
 
-        std::string Apply(std::string_view input) const
+        std::basic_string<CharT> Apply(std::basic_string_view<CharT> input) const
         {
             if (range.GetStart() == 0 && range.GetEnd() == input.length()) {
                 return text;
             }
-            std::string result;
-            result.reserve(range.GetStart() + text.length() + input.length() - (std::min)(range.GetEnd(), (int)input.length()));
+            std::basic_string<CharT> result;
+            result.reserve(range.GetStart() + text.length() + input.length() - (std::min)(range.GetEnd(), input.length()));
             if (range.GetStart() > 0) {
                 result.append(input.substr(0, range.GetStart()));
             }
@@ -424,7 +646,7 @@ namespace brigadier
             return result;
         }
 
-        void Expand(std::string_view command, StringRange range)
+        void Expand(std::basic_string_view<CharT> command, StringRange range)
         {
             if (this->range == range)
                 return;
@@ -439,117 +661,133 @@ namespace brigadier
             this->range = range;
         }
     protected:
-        friend class Suggestions;
-        friend class SuggestionsBuilder;
-        Suggestion(std::string text, StringRange range, std::string_view tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
-        Suggestion(std::string text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
+        friend class Suggestions<CharT>;
+        friend class SuggestionsBuilder<CharT>;
+        Suggestion<CharT>(std::basic_string<CharT> text, StringRange range, std::basic_string_view<CharT> tooltip) : range(std::move(range)), text(std::move(text)), tooltip(std::move(tooltip)) {}
+        Suggestion<CharT>(std::basic_string<CharT> text, StringRange range) : range(std::move(range)), text(std::move(text)) {}
     private:
         StringRange range;
-        std::string text;
-        std::string_view tooltip;
+        std::basic_string<CharT> text;
+        std::basic_string_view<CharT> tooltip;
     };
+    BRIGADIER_SPECIALIZE_BASIC(Suggestion);
 
+    template<typename CharT>
     struct CompareNoCase {
-        inline bool operator() (Suggestion const& a, Suggestion const& b) const
+        inline bool operator() (Suggestion<CharT> const& a, Suggestion<CharT> const& b) const
         {
-#ifdef __unix__
-            return strcasecmp(a.GetText().c_str(), b.GetText().c_str()) < 0;
-#else
-            return _stricmp(a.GetText().c_str(), b.GetText().c_str()) < 0;
-#endif
+            CharT const* s1 = a.GetText().data();
+            CharT const* s2 = b.GetText().data();
+
+            for (size_t i = 0; s1[i] && s2[i]; ++i)
+            {
+                int diff = std::tolower(s1[i]) - std::tolower(s2[i]);
+                if (diff) return diff < 0;
+            }
+
+            return false;
         }
     };
+}
+#pragma once
 
+namespace brigadier
+{
+    template<typename CharT>
     class Suggestions
     {
     public:
-        Suggestions(StringRange range, std::set<Suggestion, CompareNoCase> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
-        Suggestions() : Suggestions(StringRange::At(0), {}) {}
+        Suggestions(StringRange range, std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
+        Suggestions() : Suggestions<CharT>(StringRange::At(0), {}) {}
 
         inline StringRange GetRange() const { return range; }
-        inline std::set<Suggestion, CompareNoCase> const& GetList() const { return suggestions; }
+        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
         inline bool IsEmpty() { return suggestions.empty(); }
 
-        static inline std::future<Suggestions> Empty();
+        static inline std::future<Suggestions<CharT>> Empty()
+        {
+            std::promise<Suggestions<CharT>> f;
+            f.set_value(Suggestions<CharT>());
+            return f.get_future();
+        }
 
-        static inline Suggestions Merge(std::string_view command, std::vector<Suggestions> const& input, bool* cancel = nullptr)
+        static inline Suggestions<CharT> Merge(std::basic_string_view<CharT> command, std::vector<Suggestions<CharT>> const& input, bool* cancel = nullptr)
         {
             /**/ if (input.empty()) return {};
             else if (input.size() == 1) return input.front();
 
-            std::vector<Suggestion> suggestions;
+            std::vector<Suggestion<CharT>> suggestions;
 
             for (auto& sugs : input)
             {
                 suggestions.insert(suggestions.end(), sugs.GetList().begin(), sugs.GetList().end());
             }
-            return Suggestions::Create(command, suggestions, cancel);
+            return Suggestions<CharT>::Create(command, suggestions, cancel);
         }
-        static inline Suggestions Create(std::string_view command, std::vector<Suggestion>& suggestions, bool* cancel = nullptr)
+        static inline Suggestions<CharT> Create(std::basic_string_view<CharT> command, std::vector<Suggestion<CharT>>& suggestions, bool* cancel = nullptr)
         {
-            if (suggestions.empty()) return {};
-            int start = std::numeric_limits<int>::max();
-            int end = std::numeric_limits<int>::min();
+            Suggestions<CharT> ret;
+            if (suggestions.empty()) return ret;
+            size_t start = std::numeric_limits<size_t>::max();
+            size_t end = std::numeric_limits<size_t>::min();
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return {};
+                if (cancel && *cancel) return ret;
                 start = (std::min)(suggestion.GetRange().GetStart(), start);
                 end = (std::max)(suggestion.GetRange().GetEnd(), end);
             }
-            std::set<Suggestion, CompareNoCase> suggest;
-            StringRange range = StringRange(start, end);
+            ret.range = StringRange(start, end);
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return {}; // Suggestions(range, std::move(suggest));
-                suggestion.Expand(command, range);
+                if (cancel && *cancel) return ret;
+                suggestion.Expand(command, ret.range);
             }
             for (auto& suggestion : suggestions) {
-                if (cancel && *cancel) return Suggestions(range, std::move(suggest));
-                suggest.insert(std::move(suggestion));
+                if (cancel && *cancel) return ret;
+                ret.suggestions.insert(std::move(suggestion));
             }
-            return Suggestions(range, std::move(suggest));
+            return ret;
         }
     private:
         StringRange range;
-        std::set<Suggestion, CompareNoCase> suggestions;
+        std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions;
     };
+    BRIGADIER_SPECIALIZE_BASIC(Suggestions);
+}
+#pragma once
 
-    std::future<Suggestions> Suggestions::Empty()
-    {
-        std::promise<Suggestions> f;
-        f.set_value(Suggestions());
-        return f.get_future();
-    }
-
+namespace brigadier
+{
+    template<typename CharT>
     class SuggestionsBuilder
     {
     public:
-        SuggestionsBuilder(std::string_view input, std::string_view inputLowerCase, int start, bool* cancel = nullptr) : input(input), inputLowerCase(inputLowerCase), start(start), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
+        SuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, size_t start, bool* cancel = nullptr) : start(start), input(input), inputLowerCase(inputLowerCase), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
 
         inline int GetStart() const { return start; }
-        inline std::string_view GetInput() const { return input; }
-        inline std::string_view GetInputLowerCase() const { return inputLowerCase; }
-        inline std::string_view GetRemaining() const { return remaining; }
-        inline std::string_view GetRemainingLowerCase() const { return remainingLowerCase; }
+        inline std::basic_string_view<CharT> GetInput() const { return input; }
+        inline std::basic_string_view<CharT> GetInputLowerCase() const { return inputLowerCase; }
+        inline std::basic_string_view<CharT> GetRemaining() const { return remaining; }
+        inline std::basic_string_view<CharT> GetRemainingLowerCase() const { return remainingLowerCase; }
 
-        Suggestions Build(bool* cancel = nullptr)
+        Suggestions<CharT> Build(bool* cancel = nullptr)
         {
-            auto ret = Suggestions::Create(input, result, cancel);
+            auto ret = Suggestions<CharT>::Create(input, result, cancel);
             if (cancel != nullptr) *cancel = false;
             result.clear();
             return ret;
         }
-        inline std::future<Suggestions> BuildFuture()
+        inline std::future<Suggestions<CharT>> BuildFuture()
         {
-            return std::async(std::launch::async, &SuggestionsBuilder::Build, this, this->cancel);
+            return std::async(std::launch::async, &SuggestionsBuilder<CharT>::Build, this, this->cancel);
         }
 
-        inline SuggestionsBuilder& Suggest(std::string_view text)
+        inline SuggestionsBuilder<CharT>& Suggest(std::basic_string_view<CharT> text)
         {
             if (text == remaining) return *this;
 
             result.emplace_back(StringRange::Between(start, input.length()), text);
             return *this;
         }
-        inline SuggestionsBuilder& Suggest(std::string_view text, std::string_view tooltip)
+        inline SuggestionsBuilder<CharT>& Suggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip)
         {
             if (text == remaining) return *this;
 
@@ -557,18 +795,18 @@ namespace brigadier
             return *this;
         }
         template<typename T>
-        SuggestionsBuilder& Suggest(T value)
+        SuggestionsBuilder<CharT>& Suggest(T value)
         {
             result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()));
             return *this;
         }
         template<typename T>
-        SuggestionsBuilder& Suggest(T value, std::string_view tooltip)
+        SuggestionsBuilder<CharT>& Suggest(T value, std::basic_string_view<CharT> tooltip)
         {
             result.emplace_back(std::move(std::to_string(value)), StringRange::Between(start, input.length()), tooltip);
             return *this;
         }
-        inline int AutoSuggest(std::string_view text, std::string_view input)
+        inline int AutoSuggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> input)
         {
             if (text.rfind(input.substr(0, text.length()), 0) == 0)
             {
@@ -577,7 +815,7 @@ namespace brigadier
             }
             return 0;
         }
-        inline int AutoSuggest(std::string_view text, std::string_view tooltip, std::string_view input)
+        inline int AutoSuggest(std::basic_string_view<CharT> text, std::basic_string_view<CharT> tooltip, std::basic_string_view<CharT> input)
         {
             if (text.rfind(input.substr(0, text.length()), 0) == 0)
             {
@@ -587,9 +825,9 @@ namespace brigadier
             return 0;
         }
         template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-        int AutoSuggest(T value, std::string_view input)
+        int AutoSuggest(T value, std::basic_string_view<CharT> input)
         {
-            std::string val = std::to_string(value);
+            std::basic_string<CharT> val = std::to_string(value);
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
                 result.emplace_back(std::move(val), StringRange::Between(start, input.length()));
@@ -598,9 +836,9 @@ namespace brigadier
             return 0;
         }
         template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-        int AutoSuggest(T value, std::string_view tooltip, std::string_view input)
+        int AutoSuggest(T value, std::basic_string_view<CharT> tooltip, std::basic_string_view<CharT> input)
         {
-            std::string val = std::to_string(value);
+            std::basic_string<CharT> val = std::to_string(value);
 
             if (val.rfind(input.substr(0, val.length()), 0) == 0)
             {
@@ -630,13 +868,13 @@ namespace brigadier
             return counter;
         }
 
-        inline SuggestionsBuilder& Add(SuggestionsBuilder const& other)
+        inline SuggestionsBuilder<CharT>& Add(SuggestionsBuilder<CharT> const& other)
         {
             result.insert(result.end(), other.result.begin(), other.result.end());
             return *this;
         }
 
-        inline void SetOffset(int start)
+        inline void SetOffset(size_t start)
         {
             this->start = start;
             remaining = input.substr(start);
@@ -649,31 +887,76 @@ namespace brigadier
             result.clear();
         }
 
-        ~SuggestionsBuilder() = default;
+        ~SuggestionsBuilder<CharT>() = default;
     private:
-        int start = 0;
-        std::string_view input;
-        std::string_view inputLowerCase;
-        std::string_view remaining;
-        std::string_view remainingLowerCase;
-        std::vector<Suggestion> result;
+        size_t start = 0;
+        std::basic_string_view<CharT> input;
+        std::basic_string_view<CharT> inputLowerCase;
+        std::basic_string_view<CharT> remaining;
+        std::basic_string_view<CharT> remainingLowerCase;
+        std::vector<Suggestion<CharT>> result;
         bool* cancel = nullptr;
     };
+    BRIGADIER_SPECIALIZE_BASIC(SuggestionsBuilder);
+}
+#pragma once
+
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class CommandNode;
+    template<typename CharT, typename S>
+    class CommandContext;
 
     template<typename... Ts>
     using Predicate = bool(*)(Ts&&... args);
-    template<typename S>
-    using AmbiguityConsumer = void(*)(CommandNode<S>* parent, CommandNode<S>* child, CommandNode<S>* sibling, std::set<std::string_view>& inputs);
-    template<typename S>
-    using Command = int(*)(CommandContext<S>& context);
-    template<typename S>
-    using RedirectModifier = std::vector<S>(*)(CommandContext<S>& context);
-    template<typename S>
-    using SingleRedirectModifier = S(*)(CommandContext<S>& context);
-    template<typename S>
-    using ResultConsumer = void(*)(CommandContext<S>& context, bool success, int result);
-    template<typename S>
-    using SuggestionProvider = std::future<Suggestions>(*)(CommandContext<S>& context, SuggestionsBuilder& builder);
+    template<typename CharT, typename S>
+    using AmbiguityConsumer = void(*)(CommandNode<CharT, S>* parent, CommandNode<CharT, S>* child, CommandNode<CharT, S>* sibling, std::set<std::basic_string_view<CharT>>& inputs);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(AmbiguityConsumer, typename S, S);
+    template<typename CharT, typename S>
+    using Command = int(*)(CommandContext<CharT, S>& context);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(Command, typename S, S);
+    template<typename CharT, typename S>
+    using RedirectModifier = std::vector<S>(*)(CommandContext<CharT, S>& context);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(RedirectModifier, typename S, S);
+    template<typename CharT, typename S>
+    using SingleRedirectModifier = S(*)(CommandContext<CharT, S>& context);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(SingleRedirectModifier, typename S, S);
+    template<typename CharT, typename S>
+    using ResultConsumer = void(*)(CommandContext<CharT, S>& context, bool success, int result);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(ResultConsumer, typename S, S);
+    template<typename CharT, typename S>
+    using SuggestionProvider = std::future<Suggestions<CharT>>(*)(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder);
+    BRIGADIER_SPECIALIZE_BASIC_ALIAS(SuggestionProvider, typename S, S);
+}
+
+#define COMMAND(S, ...) [](auto& ctx) -> int __VA_ARGS__
+#pragma once
+
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class CommandNode;
+    template<typename CharT, typename S>
+    class IArgumentCommandNode;
+    template<typename CharT, typename S>
+    class LiteralCommandNode;
+    template<typename CharT, typename S>
+    class RootCommandNode;
+    template<typename CharT, typename S>
+    class CommandDispatcher;
+
+    template<typename CharT, typename S, typename T, typename node_type>
+    class ArgumentBuilder;
+    template<typename CharT, typename S>
+    class MultiArgumentBuilder;
+    template<typename CharT, typename S>
+    class LiteralArgumentBuilder;
+    template<typename CharT, typename S, typename T>
+    class RequiredArgumentBuilder;
+
+    template<typename CharT, typename S>
+    class CommandContext;
 
     enum class CommandNodeType
     {
@@ -682,11 +965,11 @@ namespace brigadier
         ArgumentCommandNode
     };
 
-    template<typename S>
+    template<typename CharT, typename S>
     class CommandNode
     {
     public:
-        CommandNode(Command<S> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<S>> redirect, RedirectModifier<S> modifier, const bool forks)
+        CommandNode(Command<CharT, S> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<CharT, S>> redirect, RedirectModifier<CharT, S> modifier, const bool forks)
             : command(std::move(command))
             , requirement(std::move(requirement))
             , redirect(std::move(redirect))
@@ -696,17 +979,17 @@ namespace brigadier
         CommandNode() {}
         virtual ~CommandNode() = default;
     public:
-        inline Command<S> GetCommand() const
+        inline Command<CharT, S> GetCommand() const
         {
             return command;
         }
 
-        inline std::map<std::string, std::shared_ptr<CommandNode<S>>, std::less<>> const& GetChildren() const
+        inline std::map<std::basic_string<CharT>, std::shared_ptr<CommandNode<CharT, S>>, std::less<>> const& GetChildren() const
         {
             return children;
         }
 
-        inline std::shared_ptr<CommandNode<S>> GetChild(std::string_view name) const
+        inline std::shared_ptr<CommandNode<CharT, S>> GetChild(std::basic_string_view<CharT> name) const
         {
             auto found = children.find(name);
             if (found != children.end())
@@ -714,12 +997,12 @@ namespace brigadier
             return nullptr;
         }
 
-        inline std::shared_ptr<CommandNode<S>> GetRedirect() const
+        inline std::shared_ptr<CommandNode<CharT, S>> GetRedirect() const
         {
             return redirect;
         }
 
-        inline RedirectModifier<S> GetRedirectModifier() const
+        inline RedirectModifier<CharT, S> GetRedirectModifier() const 
         {
             return modifier;
         }
@@ -741,13 +1024,13 @@ namespace brigadier
             else return true;
         }
 
-        void AddChild(std::shared_ptr<CommandNode<S>> node)
+        void AddChild(std::shared_ptr<CommandNode<CharT, S>> node)
         {
             if (node == nullptr)
                 return;
 
             if (node->GetNodeType() == CommandNodeType::RootCommandNode) {
-                throw std::runtime_error("Cannot add a RootCommandNode as a child to any other CommandNode");
+                throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add a RootCommandNode as a child to any other CommandNode");
             }
 
             auto child = children.find(node->GetName());
@@ -756,7 +1039,7 @@ namespace brigadier
                 auto child_node = child->second;
 
                 if (child_node->GetNodeType() != node->GetNodeType())
-                    throw std::runtime_error("Node type (literal/argument) mismatch!");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
 
                 auto node_command = node->GetCommand();
                 if (node_command != nullptr) {
@@ -769,22 +1052,22 @@ namespace brigadier
             else {
                 children.emplace(node->GetName(), node);
                 if (node->GetNodeType() == CommandNodeType::LiteralCommandNode) {
-                    literals.emplace_back(std::move(std::static_pointer_cast<LiteralCommandNode<S>>(std::move(node))));
+                    literals.emplace_back(std::move(std::static_pointer_cast<LiteralCommandNode<CharT, S>>(std::move(node))));
                 }
                 else if (node->GetNodeType() == CommandNodeType::ArgumentCommandNode) {
-                    arguments.emplace_back(std::move(std::static_pointer_cast<IArgumentCommandNode<S>>(std::move(node))));
+                    arguments.emplace_back(std::move(std::static_pointer_cast<IArgumentCommandNode<CharT, S>>(std::move(node))));
                 }
             }
         }
 
-        void FindAmbiguities(AmbiguityConsumer<S> consumer)
+        void FindAmbiguities(AmbiguityConsumer<CharT, S> consumer)
         {
             for (auto [child_name, child] : children) {
                 for (auto [sibling_name, sibling] : children) {
                     if (child == sibling)
                         continue;
 
-                    std::set<std::string_view> matches;
+                    std::set<std::basic_string_view<CharT>> matches;
 
                     for (auto input : child->GetExamples()) {
                         if (sibling->IsValidInput(input)) {
@@ -801,25 +1084,25 @@ namespace brigadier
             }
         }
 
-        std::tuple<std::shared_ptr<CommandNode<S>>*, size_t> GetRelevantNodes(StringReader& input)
+        std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t> GetRelevantNodes(StringReader<CharT>& input)
         {
             if (literals.size() > 0) {
-                int cursor = input.GetCursor();
+                size_t cursor = input.GetCursor();
                 while (input.CanRead() && input.Peek() != ' ') {
                     input.Skip();
                 }
-                std::string_view text = input.GetString().substr(cursor, input.GetCursor() - cursor);
+                std::basic_string_view<CharT> text = input.GetString().substr(cursor, input.GetCursor() - cursor);
                 input.SetCursor(cursor);
                 auto literal = children.find(text);
                 if (literal != children.end() && literal->second->GetNodeType() == CommandNodeType::LiteralCommandNode) {
-                    return std::tuple<std::shared_ptr<CommandNode<S>>*, size_t>(&literal->second, 1);
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>(&literal->second, 1);
                 }
                 else {
-                    return std::tuple<std::shared_ptr<CommandNode<S>>*, size_t>((std::shared_ptr<CommandNode<S>>*)arguments.data(), arguments.size());
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
                 }
             }
             else {
-                return std::tuple<std::shared_ptr<CommandNode<S>>*, size_t>((std::shared_ptr<CommandNode<S>>*)arguments.data(), arguments.size());
+                return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
             }
         }
 
@@ -832,114 +1115,124 @@ namespace brigadier
             return false;
         }
     public:
-        virtual std::string const& GetName() = 0;
-        virtual std::string GetUsageText() = 0;
-        virtual std::vector<std::string_view> GetExamples() = 0;
-        virtual void Parse(StringReader& reader, CommandContext<S>& contextBuilder) = 0;
-        virtual std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder) = 0;
+        virtual std::basic_string<CharT> const& GetName() = 0;
+        virtual std::basic_string<CharT> GetUsageText() = 0;
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() = 0;
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) = 0;
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) = 0;
 
         virtual CommandNodeType GetNodeType() = 0;
     protected:
-        template<typename _S, typename T, typename node_type>
+        template<typename, typename, typename, typename>
         friend class ArgumentBuilder;
-        template<typename _S>
+        template<typename, typename>
         friend class MultiArgumentBuilder;
-        template<typename _S>
+        template<typename, typename>
         friend class CommandDispatcher;
-        template<typename _S, typename T>
+        template<typename, typename, typename>
         friend class RequiredArgumentBuilder;
-        template<typename _S>
+        template<typename, typename>
         friend class LiteralArgumentBuilder;
 
-        virtual bool IsValidInput(std::string_view input) = 0;
-        virtual std::string_view GetSortedKey() = 0;
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) = 0;
+        virtual std::basic_string_view<CharT> GetSortedKey() = 0;
     private:
-        std::map<std::string, std::shared_ptr<CommandNode<S>>, std::less<>> children;
-        std::vector<std::shared_ptr<LiteralCommandNode<S>>> literals;
-        std::vector<std::shared_ptr<IArgumentCommandNode<S>>> arguments;
-        Command<S> command = nullptr;
+        std::map<std::basic_string<CharT>, std::shared_ptr<CommandNode<CharT, S>>, std::less<>> children;
+        std::vector<std::shared_ptr<LiteralCommandNode<CharT, S>>> literals;
+        std::vector<std::shared_ptr<IArgumentCommandNode<CharT, S>>> arguments;
+        Command<CharT, S> command = nullptr;
         Predicate<S&> requirement = nullptr;
-        std::shared_ptr<CommandNode<S>> redirect = nullptr;
-        RedirectModifier<S> modifier = nullptr;
+        std::shared_ptr<CommandNode<CharT, S>> redirect = nullptr;
+        RedirectModifier<CharT, S> modifier = nullptr;
         bool forks = false;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandNode);
+}
+#pragma once
 
-    template<typename S>
-    class RootCommandNode : public CommandNode<S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class RootCommandNode : public CommandNode<CharT, S>
     {
     public:
-        RootCommandNode() : CommandNode<S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
+        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
 
         virtual ~RootCommandNode() = default;
-        virtual std::string const& GetName() { static const std::string blank; return blank; }
-        virtual std::string GetUsageText() { return {}; }
-        virtual std::vector<std::string_view> GetExamples() { return {}; }
-        virtual void Parse(StringReader& reader, CommandContext<S>& contextBuilder) {}
-        virtual std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
+        virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }
+        virtual std::basic_string<CharT> GetUsageText() { return {}; }
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return {}; }
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {}
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
-            return Suggestions::Empty();
+            return Suggestions<CharT>::Empty();
         }
         virtual CommandNodeType GetNodeType() { return CommandNodeType::RootCommandNode; }
     protected:
-        virtual bool IsValidInput(std::string_view input) { return false; }
-        virtual std::string_view GetSortedKey() { return {}; }
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) { return false; }
+        virtual std::basic_string_view<CharT> GetSortedKey() { return {}; }
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(RootCommandNode);
+}
+#pragma once
 
-    template<typename S>
-    class LiteralCommandNode : public CommandNode<S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class LiteralCommandNode : public CommandNode<CharT, S>
     {
     public:
-        LiteralCommandNode(std::string_view literal, std::shared_ptr<Command<S>> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<S>> redirect, RedirectModifier<S> modifier, const bool forks)
-            : CommandNode<S>(command, requirement, redirect, modifier, forks)
+        LiteralCommandNode(std::basic_string_view<CharT> literal, std::shared_ptr<Command<CharT, S>> command, Predicate<S&> requirement, std::shared_ptr<CommandNode<CharT, S>> redirect, RedirectModifier<CharT, S> modifier, const bool forks)
+            : CommandNode<CharT, S>(command, requirement, redirect, modifier, forks)
             , literal(literal)
             , literalLowerCase(literal)
         {
-            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](char c) { return std::tolower(c); });
+            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
-        LiteralCommandNode(std::string_view literal)
+        LiteralCommandNode(std::basic_string_view<CharT> literal)
             : literal(literal)
             , literalLowerCase(literal)
         {
-            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](char c) { return std::tolower(c); });
+            std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
         virtual ~LiteralCommandNode() = default;
-        virtual std::string const& GetName() { return literal; }
-        virtual std::string GetUsageText() { return literal; }
-        virtual std::vector<std::string_view> GetExamples() { return { literal }; }
-        virtual void Parse(StringReader& reader, CommandContext<S>& contextBuilder)
+        virtual std::basic_string<CharT> const& GetName() { return literal; }
+        virtual std::basic_string<CharT> GetUsageText() { return literal; }
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return { literal }; }
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder)
         {
-            int start = reader.GetCursor();
-            int end = Parse(reader);
-            if (end > -1) {
+            size_t start = reader.GetCursor();
+            size_t end = Parse(reader);
+            if (end != size_t(-1)) {
                 contextBuilder.WithNode(this, StringRange::Between(start, end));
                 return;
             }
 
-            throw CommandSyntaxException::BuiltInExceptions::LiteralIncorrect(reader, literal);
+            throw exceptions::LiteralIncorrect(reader, literal);
         }
-        virtual std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             if (builder.AutoSuggest(literalLowerCase, builder.GetRemainingLowerCase()))
                 return builder.BuildFuture();
             else
-                return Suggestions::Empty();
+                return Suggestions<CharT>::Empty();
         }
         virtual CommandNodeType GetNodeType() { return CommandNodeType::LiteralCommandNode; }
     protected:
-        virtual bool IsValidInput(std::string_view input) {
-            StringReader reader(input);
-            return Parse(reader) > -1;
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) {
+            StringReader<CharT> reader(input);
+            return Parse(reader) != size_t(-1);
         }
-        virtual std::string_view GetSortedKey() { return literal; }
+        virtual std::basic_string_view<CharT> GetSortedKey() { return literal; }
     private:
-        int Parse(StringReader& reader)
+        size_t Parse(StringReader<CharT>& reader)
         {
-            int start = reader.GetCursor();
+            size_t start = reader.GetCursor();
             if (reader.CanRead(literal.length())) {
                 if (reader.GetString().substr(start, literal.length()) == literal) {
-                    int end = start + literal.length();
+                    size_t end = start + literal.length();
                     reader.SetCursor(end);
-                    if (!reader.CanRead() || reader.Peek() == ' ') {
+                    if (!reader.CanRead() || reader.Peek() == CharT(' ')) {
                         return end;
                     }
                     else {
@@ -947,413 +1240,212 @@ namespace brigadier
                     }
                 }
             }
-            return -1;
+            return size_t(-1);
         }
     private:
-        std::string literal;
-        std::string literalLowerCase;
+        std::basic_string<CharT> literal;
+        std::basic_string<CharT> literalLowerCase;
     };
-    
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(LiteralCommandNode);
+}
+#pragma once
 
-    template<typename T>
-    class ArgumentType
-    {
-    public:
-        using type = T;
-    public:
-        template<typename... Args>
-        static inline CommandSyntaxException CommandParseException(ExceptionContext const& ctx, Args&&... args)
-        {
-            return CommandSyntaxException(ctx, "Error during parsing value of type '", GetTypeName(), "': ", std::forward<Args>(args)...);
-        }
+// Following code makes that you don't have to specify command source type inside arguments.
+// Command source type is automatically distributed from dispatcher.
 
-        T Parse(StringReader& reader)
-        {
-            return reader.ReadValue<T>();
-        }
+// Default registration for arguments with or without template, without specialization
+#define BRIGADIER_REGISTER_ARGTYPE(type, name)                            \
+using name = type
 
-        template<typename S>
-        std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
-        {
-            return Suggestions::Empty();
-        }
+// Registration for arguments with template parameters
+#define BRIGADIER_REGISTER_ARGTYPE_TEMPL(type, name)                      \
+template<typename... Args>                                                \
+using name = type<Args...>
 
-        static constexpr std::string_view GetTypeName()
-        {
-#ifdef HAS_NAMEOF
-            return NAMEOF_TYPE(T).substr(NAMEOF_TYPE(T).find(NAMEOF_SHORT_TYPE(T))); // Short type + template list
-#else
-            return "";
-#endif
-        }
+// Registration for arguments with specialized templates
+#define BRIGADIER_REGISTER_ARGTYPE_SPEC(type, name, ...)                  \
+using name = type<__VA_ARGS__>
 
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            return {};
-        }
-    };
-    REGISTER_ARGTYPE_TEMPL(ArgumentType, Type);
+// Registration for arguments with specialized templates and template parameters
+#define BRIGADIER_REGISTER_ARGTYPE_SPEC_TEMPL(type, name, ...)            \
+template<typename... Args>                                                \
+using name = type<__VA_ARGS__, Args...>
 
-    enum class StringArgType {
-        SINGLE_WORD,
-        QUOTABLE_PHRASE,
-        GREEDY_PHRASE
-    };
+// Default registration for arguments with or without template, without specialization, with char type
+#define BRIGADIER_REGISTER_ARGTYPE_CHAR(type, name)                       \
+template<typename CharT>                                                  \
+using name = type<CharT>
 
-    template<StringArgType strType>
-    class StringArgumentType : public ArgumentType<std::string>
-    {
-    public:
-        StringArgumentType() {};
+// Registration for arguments with template parameters, with char type
+#define BRIGADIER_REGISTER_ARGTYPE_TEMPL_CHAR(type, name)                 \
+template<typename CharT, typename... Args>                                \
+using name = type<CharT, Args...>
 
-        StringArgType GetType()
-        {
-            return strType;
-        }
+// Registration for arguments with specialized templates, with char type
+#define BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(type, name, ...)             \
+template<typename CharT>                                                  \
+using name = type<CharT, __VA_ARGS__>
 
-        std::string Parse(StringReader& reader) {
-            if (strType == StringArgType::GREEDY_PHRASE)
-            {
-                std::string text(reader.GetRemaining());
-                reader.SetCursor(reader.GetTotalLength());
-                return text;
-            }
-            else if (strType == StringArgType::SINGLE_WORD)
-            {
-                return std::string(reader.ReadUnquotedString());
-            }
-            else
-            {
-                return reader.ReadString();
-            }
-        }
+// Registration for arguments with specialized templates and template parameters, with char type
+#define BRIGADIER_REGISTER_ARGTYPE_SPEC_TEMPL_CHAR(type, name, ...)       \
+template<typename CharT, typename... Args>                                \
+using name = type<CharT, __VA_ARGS__, Args...>
+#pragma once
 
-        static constexpr std::string_view GetTypeName()
-        {
-            if constexpr (strType == StringArgType::GREEDY_PHRASE)
-            {
-                return "words";
-            }
-            else if constexpr (strType == StringArgType::SINGLE_WORD)
-            {
-                return "word";
-            }
-            else
-            {
-                return "string";
-            }
-        }
-
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            if constexpr (strType == StringArgType::GREEDY_PHRASE)
-            {
-                return { "word", "words with spaces", "\"and symbols\"" };
-            }
-            else if constexpr (strType == StringArgType::SINGLE_WORD)
-            {
-                return { "word", "words_with_underscores" };
-            }
-            else
-            {
-                return { "\"quoted phrase\"", "word", "\"\"" };
-            }
-        }
-
-        static std::string EscapeIfRequired(std::string_view input) {
-            for (auto c : input) {
-                if (!StringReader::IsAllowedInUnquotedString(c)) {
-                    return Escape(std::move(input));
-                }
-            }
-            return std::string(input);
-        }
-
-        static std::string Escape(std::string_view input) {
-            std::string result = "\"";
-
-            for (auto c : input) {
-                if (c == '\\' || c == '\"') {
-                    result += '\\';
-                }
-                result += c;
-            }
-
-            result += '\"';
-            return result;
-        }
-    };
-    REGISTER_ARGTYPE_SPEC(StringArgumentType, Word, StringArgType::SINGLE_WORD);
-    REGISTER_ARGTYPE_SPEC(StringArgumentType, String, StringArgType::QUOTABLE_PHRASE);
-    REGISTER_ARGTYPE_SPEC(StringArgumentType, GreedyString, StringArgType::GREEDY_PHRASE);
-
-    class BoolArgumentType : public ArgumentType<bool>
-    {
-    public:
-        template<typename S>
-        std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
-        {
-            builder.AutoSuggestLowerCase(std::initializer_list({ "true", "false" }));
-            return builder.BuildFuture();
-        }
-        static constexpr std::string_view GetTypeName()
-        {
-            return "bool";
-        }
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            return { "true", "false" };
-        }
-    };
-    REGISTER_ARGTYPE(BoolArgumentType, Bool);
-
-    class CharArgumentType : public ArgumentType<char>
-    {
-    public:
-        char Parse(StringReader& reader)
-        {
-            if (reader.CanRead())
-                return reader.Read();
-            else throw CommandSyntaxException::BuiltInExceptions::ReaderExpectedValue(reader);
-        }
-
-        static constexpr std::string_view GetTypeName()
-        {
-            return "char";
-        }
-
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            return { "c", "@", "." };
-        }
-    };
-    REGISTER_ARGTYPE(CharArgumentType, Char);
-
-    template<typename T>
-    class ArithmeticArgumentType : public ArgumentType<T>
-    {
-        static_assert(std::is_arithmetic_v<T>, "T must be a number");
-    public:
-        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = std::numeric_limits<T>::max()) : minimum(minimum), maximum(maximum) {}
-
-        T GetMinimum() {
-            return minimum;
-        }
-        T GetMaximum() {
-            return maximum;
-        }
-
-        T Parse(StringReader& reader)
-        {
-            int start = reader.GetCursor();
-            T result = reader.ReadValue<T>();
-            if (result < minimum) {
-                reader.SetCursor(start);
-                throw CommandSyntaxException::BuiltInExceptions::ValueTooLow(reader, result, minimum);
-            }
-            if (result > maximum) {
-                reader.SetCursor(start);
-                throw CommandSyntaxException::BuiltInExceptions::ValueTooHigh(reader, result, maximum);
-            }
-            return result;
-        }
-
-        static constexpr std::string_view GetTypeName()
-        {
-            /**/ if constexpr (std::is_floating_point_v<T>)
-                return "float";
-            else if constexpr (std::is_integral_v<T>)
-            {
-                if constexpr (std::is_signed_v<T>)
-                    return "int";
-                else
-                    return "uint";
-            }
-            else return ArgumentType<T>::GetTypeName();
-        }
-
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            /**/ if constexpr (std::is_floating_point_v<T>)
-                return { "0", "1.2", ".5", "-1", "-.5", "-1234.56" };
-            else if constexpr (std::is_integral_v<T>)
-            {
-                if constexpr (std::is_signed_v<T>)
-                    return { "0", "123", "-123" };
-                else
-                    return { "0", "123" };
-            }
-            else return {};
-        }
-    private:
-        T minimum;
-        T maximum;
-    };
-    REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Float, float);
-    REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Double, double);
-    REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Integer, int);
-    REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Long, long long);
-    REGISTER_ARGTYPE_TEMPL(ArithmeticArgumentType, Number);
-
-#ifdef HAS_MAGICENUM
-    template<typename T>
-    class EnumArgumentType : public ArgumentType<T>
-    {
-        static_assert(std::is_enum_v<T>, "T must be enum");
-    public:
-        T Parse(StringReader& reader)
-        {
-            int start = reader.GetCursor();
-            auto str = reader.ReadString();
-            auto result = magic_enum::enum_cast<T>(str);
-            if (!result.has_value())
-            {
-                throw CommandSyntaxException::BuiltInExceptions::ReaderInvalidValue(reader, str);
-            }
-            return result.value();
-        }
-
-        template<typename S>
-        std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
-        {
-            static constexpr auto names = magic_enum::enum_names<T>();
-            builder.AutoSuggestLowerCase(names);
-            return builder.BuildFuture();
-        }
-
-        static constexpr std::string_view GetTypeName()
-        {
-            return "enum";
-        }
-
-        static inline std::vector<std::string_view> GetExamples()
-        {
-            static constexpr auto names = magic_enum::enum_names<T>();
-            return std::vector<std::string_view>(names.begin(), names.end());
-        }
-    };
-    REGISTER_ARGTYPE_TEMPL(EnumArgumentType, Enum);
-#endif
-
+namespace brigadier
+{
     struct TypeInfo
     {
         TypeInfo(size_t hash) : hash(hash) {}
-        template<typename ArgType>
-        static constexpr size_t Create() { return (((uintptr_t)(ArgType::GetTypeName().data())) + (sizeof(typename ArgType::type) << 24) + (sizeof(ArgType) << 8)); }
+        template<typename CharT, typename ArgType>
+        static constexpr size_t Create() { return (((uintptr_t)((void*)ArgType::template GetTypeName<CharT>().data())) + (sizeof(typename ArgType::type) << 24) + (sizeof(ArgType) << 8)); }
+        template<typename CharT, template<typename> typename ArgType>
+        inline static constexpr size_t Create() { return Create<CharT, ArgType<CharT>>(); }
         inline bool operator==(TypeInfo const& other) { return hash == other.hash; }
         inline bool operator!=(TypeInfo const& other) { return hash != other.hash; }
         size_t hash = 0;
     };
 
-    template<typename S>
+    template<typename CharT, typename S>
     class IParsedArgument
     {
     public:
-        IParsedArgument(int start, int end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
+        IParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
         virtual ~IParsedArgument() = default;
 
         inline StringRange GetRange()    const { return range; }
-        inline TypeInfo    GetTypeInfo() const { return typeInfo; }
+        inline TypeInfo                GetTypeInfo() const { return typeInfo; }
     protected:
         StringRange range;
         TypeInfo typeInfo;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(IParsedArgument);
 
-    template<typename S, typename ArgType>
-    class ParsedArgument : public IParsedArgument<S>
+    template<typename CharT, typename S, typename ArgType>
+    class ParsedArgument : public IParsedArgument<CharT, S>
     {
     public:
         using T = typename ArgType::type;
 
-        ParsedArgument(const int start, const int end, T result) : IParsedArgument<S>(start, end, TypeInfo(TypeInfo::Create<ArgType>())), result(std::move(result)) {}
+        ParsedArgument(size_t start, size_t end, T result) : IParsedArgument<CharT, S>(start, end, TypeInfo(TypeInfo::Create<CharT, ArgType>())), result(std::move(result)) {}
         virtual ~ParsedArgument() = default;
 
-        inline T& GetResult() { return result; }
+        inline T&       GetResult()       { return result; }
         inline T const& GetResult() const { return result; }
     private:
         T result;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParsedArgument);
+}
+#pragma once
 
-    template<typename S>
-    struct ParsedCommandNode
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class ParsedCommandNode
     {
     public:
-        ParsedCommandNode(CommandNode<S>* node, StringRange range) : node(node), range(std::move(range)) {}
+        ParsedCommandNode(CommandNode<CharT, S>* node, StringRange range) : node(node), range(std::move(range)) {}
 
-        inline CommandNode<S>* GetNode()  const { return node; }
+        inline CommandNode<CharT, S>* GetNode()  const { return node;  }
         inline StringRange     GetRange() const { return range; }
     private:
-        CommandNode<S>* node;
+        CommandNode<CharT, S>* node;
         StringRange range;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParsedCommandNode);
+}
+#pragma once
 
-    template<typename S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
     class SuggestionContext
     {
     public:
-        SuggestionContext(CommandNode<S>* parent, int startPos) : parent(parent), startPos(startPos) {}
+        SuggestionContext(CommandNode<CharT, S>* parent, size_t startPos) : parent(parent), startPos(startPos) {}
 
-        CommandNode<S>* parent;
-        int startPos;
+        CommandNode<CharT, S>* parent;
+        size_t startPos;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(SuggestionContext);
+}
+#pragma once
 
-    template<typename S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
     class CommandDispatcher;
-    template<typename S>
+    template<typename CharT, typename S>
     class LiteralCommandNode;
-    template<typename S>
+    template<typename CharT, typename S>
     class CommandNode;
-    template<typename S, typename T>
+    template<typename CharT, typename S, typename T>
     class ArgumentCommandNode;
     namespace detail
     {
-        template<typename S>
+        template<typename CharT, typename S>
         class CommandContextInternal;
     }
 
-    template<typename S>
+    template<typename CharT, typename S>
     class CommandContext
     {
     public:
-        CommandContext(S source, CommandNode<S>* root, int start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<S>>(root, start)) {}
-        CommandContext(S source, CommandNode<S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<S>>(root, range)) {}
+        CommandContext(S source, CommandNode<CharT, S>* root, size_t start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, start)) {}
+        CommandContext(S source, CommandNode<CharT, S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, range)) {}
 
-        inline CommandContext<S> GetFor(S source) const;
-        inline CommandContext<S>* GetChild() const;
-        inline CommandContext<S>* GetLastChild() const;
-        inline CommandContext<S>* GetParent() const;
-        inline CommandContext<S>* GetLastParent() const;
-        inline Command<S> GetCommand() const;
+        inline CommandContext<CharT, S> GetFor(S source) const;
+        inline CommandContext<CharT, S>* GetChild() const;
+        inline CommandContext<CharT, S>* GetLastChild() const;
+        inline CommandContext<CharT, S>* GetParent() const;
+        inline CommandContext<CharT, S>* GetLastParent() const;
+        inline Command<CharT, S> GetCommand() const;
         inline S& GetSource();
         inline S const& GetSource() const;
-        inline RedirectModifier<S> GetRedirectModifier() const;
+        inline RedirectModifier<CharT, S> GetRedirectModifier() const;
         inline StringRange GetRange() const;
-        inline std::string_view GetInput() const;
-        inline CommandNode<S>* GetRootNode() const;
-        inline std::vector<ParsedCommandNode<S>>& GetNodes() const;
+        inline std::basic_string_view<CharT> GetInput() const;
+        inline CommandNode<CharT, S>* GetRootNode() const;
+        inline std::vector<ParsedCommandNode<CharT, S>>& GetNodes() const;
     protected:
-        inline detail::CommandContextInternal<S>* GetInternalContext() const;
+        inline detail::CommandContextInternal<CharT, S>* GetInternalContext() const;
     public:
         inline bool HasNodes() const;
         inline bool IsForked() const;
 
         template<typename ArgType>
-        typename ArgType::type GetArgument(std::string_view name);
+        typename ArgType::type GetArgument(std::basic_string_view<CharT> name);
         template<typename ArgType>
-        typename ArgType::type GetArgumentOr(std::string_view name, typename ArgType::type default_value);
+        std::optional<typename ArgType::type> GetArgumentOpt(std::basic_string_view<CharT> name);
+        template<typename ArgType>
+        typename ArgType::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value);
+        
+        template<template<typename> typename ArgType>
+        inline typename ArgType<CharT>::type GetArgument(std::basic_string_view<CharT> name) {
+            return GetArgument<ArgType<CharT>>(name);
+        }
+        template<template<typename> typename ArgType>
+        inline std::optional<typename ArgType<CharT>::type> GetArgumentOpt(std::basic_string_view<CharT> name) {
+            return GetArgumentOpt<ArgType<CharT>>(name);
+        }
+        template<template<typename> typename ArgType>
+        inline typename ArgType<CharT>::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value) {
+            return GetArgumentOr<ArgType<CharT>>(name, std::move(default_value));
+        }
 
         ~CommandContext();
     protected:
-        inline CommandContext<S>& WithInput(std::string_view input);
-        inline CommandContext<S>& WithSource(S source);
-        inline CommandContext<S>& WithArgument(std::string_view name, std::shared_ptr<IParsedArgument<S>> argument);
-        inline CommandContext<S>& WithCommand(Command<S> command);
-        inline CommandContext<S>& WithNode(CommandNode<S>* node, StringRange range);
-        inline CommandContext<S>& WithChildContext(CommandContext<S> childContext);
+        inline CommandContext<CharT, S>& WithInput(std::basic_string_view<CharT> input);
+        inline CommandContext<CharT, S>& WithSource(S source);
+        inline CommandContext<CharT, S>& WithArgument(std::basic_string_view<CharT> name, std::shared_ptr<IParsedArgument<CharT, S>> argument);
+        inline CommandContext<CharT, S>& WithCommand(Command<CharT, S> command);
+        inline CommandContext<CharT, S>& WithNode(CommandNode<CharT, S>* node, StringRange range);
+        inline CommandContext<CharT, S>& WithChildContext(CommandContext<CharT, S> childContext);
 
         inline void Reset()
         {
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::CommandContextInternal<CharT, S>& ctx = *context;
             input = {};
             ctx.arguments.clear();
             ctx.command = nullptr;
@@ -1363,85 +1455,105 @@ namespace brigadier
             ctx.modifier = nullptr;
             ctx.forks = false;
         }
-        inline void Reset(S src, CommandNode<S>* root)
+        inline void Reset(S src, CommandNode<CharT, S>* root)
         {
             Reset();
-            source = std::move(src);
-            detail::CommandContextInternal<S>& ctx = *context;
+            source.~S();
+            ::new (&source)S(std::move(src));
+            detail::CommandContextInternal<CharT, S>& ctx = *context;
             ctx.rootNode = root;
         }
     public:
-        inline void Reset(S source, CommandNode<S>* root, int start)
+        inline void Reset(S source, CommandNode<CharT, S>* root, size_t start)
         {
             Reset(source, root);
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::CommandContextInternal<CharT, S>& ctx = *context;
             ctx.range = StringRange::At(start);
         }
-        inline void Reset(S source, CommandNode<S>* root, StringRange range)
+        inline void Reset(S source, CommandNode<CharT, S>* root, StringRange range)
         {
             Reset(source, root);
-            detail::CommandContextInternal<S>& ctx = *context;
+            detail::CommandContextInternal<CharT, S>& ctx = *context;
             ctx.range = std::move(range);
         }
     protected:
-        SuggestionContext<S> FindSuggestionContext(int cursor);
+        SuggestionContext<CharT, S> FindSuggestionContext(size_t cursor);
 
-        void Merge(CommandContext<S> other);
+        void Merge(CommandContext<CharT, S> other);
     private:
-        friend class CommandDispatcher<S>;
-        friend class LiteralCommandNode<S>;
-        friend class CommandNode<S>;
-        template<typename _S, typename T>
+        friend class CommandDispatcher<CharT, S>;
+        friend class LiteralCommandNode<CharT, S>;
+        friend class CommandNode<CharT, S>;
+        template<typename, typename, typename>
         friend class ArgumentCommandNode;
 
         S source;
-        std::string_view input = {};
-        std::shared_ptr<detail::CommandContextInternal<S>> context = nullptr;
+        std::basic_string_view<CharT> input = {};
+        std::shared_ptr<detail::CommandContextInternal<CharT, S>> context = nullptr;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContext);
 
     namespace detail
     {
-        template<typename S>
+        template<typename CharT, typename S>
         class CommandContextInternal
         {
         public:
-            CommandContextInternal(CommandNode<S>* root, int start) : rootNode(root), range(StringRange::At(start)) {}
-            CommandContextInternal(CommandNode<S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
+            CommandContextInternal(CommandNode<CharT, S>* root, size_t start) : rootNode(root), range(StringRange::At(start)) {}
+            CommandContextInternal(CommandNode<CharT, S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
         protected:
-            friend class CommandContext<S>;
+            friend class CommandContext<CharT, S>;
 
-            std::map<std::string, std::shared_ptr<IParsedArgument<S>>, std::less<>> arguments;
-            Command<S> command = nullptr;
-            CommandNode<S>* rootNode = nullptr;
-            std::vector<ParsedCommandNode<S>> nodes;
+            std::map<std::basic_string<CharT>, std::shared_ptr<IParsedArgument<CharT, S>>, std::less<>> arguments;
+            Command<CharT, S> command = nullptr;
+            CommandNode<CharT, S>* rootNode = nullptr;
+            std::vector<ParsedCommandNode<CharT, S>> nodes;
             StringRange range;
-            CommandContext<S>* parent = nullptr;
-            std::optional<CommandContext<S>> child = {};
-            RedirectModifier<S> modifier = nullptr;
+            CommandContext<CharT, S>* parent = nullptr;
+            std::optional<CommandContext<CharT, S>> child = {};
+            RedirectModifier<CharT, S> modifier = nullptr;
             bool forks = false;
         };
+        BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContextInternal);
     }
 
-    template<typename S>
+    template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<S>::GetArgument(std::string_view name)
+    typename ArgType::type CommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name)
     {
         auto argument = context->arguments.find(name);
 
         if (argument == context->arguments.end()) {
-            throw std::runtime_error("No such argument '" + std::string(name) + "' exists on this command");
+            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "No such argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' exists on this command");
         }
         auto& parsed = argument->second;
-        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType>())) {
-            throw std::runtime_error("Argument '" + std::string(name) + "' has been acquired using wrong type");
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
+            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<S, ArgType>*)parsed.get())->GetResult();
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
     }
 
-    template<typename S>
+    template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<S>::GetArgumentOr(std::string_view name, typename ArgType::type default_value)
+    std::optional<typename ArgType::type> CommandContext<CharT, S>::GetArgumentOpt(std::basic_string_view<CharT> name)
+    {
+        auto argument = context->arguments.find(name);
+
+        if (argument == context->arguments.end()) {
+            return std::nullopt;
+        }
+        auto& parsed = argument->second;
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
+            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
+        }
+
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
+    }
+
+    template<typename CharT, typename S>
+    template<typename ArgType>
+    typename ArgType::type CommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value)
     {
         auto argument = context->arguments.find(name);
 
@@ -1449,124 +1561,124 @@ namespace brigadier
             return std::move(default_value);
         }
         auto& parsed = argument->second;
-        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<ArgType>())) {
-            throw std::runtime_error("Argument '" + std::string(name) + "' has been acquired using wrong type");
+        if (parsed->GetTypeInfo() != TypeInfo(TypeInfo::Create<CharT, ArgType>())) {
+            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Argument '") << std::basic_string<CharT>(name) << BRIGADIER_LITERAL(CharT, "' has been acquired using wrong type");
         }
 
-        return ((ParsedArgument<S, ArgType>*)parsed.get())->GetResult();
+        return ((ParsedArgument<CharT, S, ArgType>*)parsed.get())->GetResult();
     }
 
-    template<typename S>
-    inline CommandContext<S> CommandContext<S>::GetFor(S source) const
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S> CommandContext<CharT, S>::GetFor(S source) const
     {
-        CommandContext<S> result = *this;
+        CommandContext<CharT, S> result = *this;
         result.source = std::move(source);
+        result.input = input;
         return result;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetChild() const
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>* CommandContext<CharT, S>::GetChild() const
     {
         if (context->child.has_value())
             return &context->child.value();
         else return nullptr;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetParent() const
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>* CommandContext<CharT, S>::GetParent() const
     {
         return context->parent;
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetLastParent() const
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>* CommandContext<CharT, S>::GetLastParent() const
     {
-        CommandContext<S>* result = this;
+        CommandContext<CharT, S>* result = this;
         while (result->GetParent() != nullptr) {
             result = result->GetParent();
         }
         return result;
     }
 
-    template<typename S>
-    inline detail::CommandContextInternal<S>* CommandContext<S>::GetInternalContext() const
+    template<typename CharT, typename S>
+    inline detail::CommandContextInternal<CharT, S>* CommandContext<CharT, S>::GetInternalContext() const
     {
         return context.get();
     }
 
-    template<typename S>
-    inline CommandContext<S>* CommandContext<S>::GetLastChild() const
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>* CommandContext<CharT, S>::GetLastChild() const
     {
-        CommandContext<S>* result = this;
+        CommandContext<CharT, S>* result = this;
         while (result->GetChild() != nullptr) {
             result = result->GetChild();
         }
         return result;
     }
 
-    template<typename S>
-    inline Command<S> CommandContext<S>::GetCommand() const
+    template<typename CharT, typename S>
+    inline Command<CharT, S> CommandContext<CharT, S>::GetCommand() const
     {
         return context->command;
     }
 
-
-    template<typename S>
-    inline S& CommandContext<S>::GetSource()
+    template<typename CharT, typename S>
+    inline S& CommandContext<CharT, S>::GetSource()
     {
         return source;
     }
 
-    template<typename S>
-    inline S const& CommandContext<S>::GetSource() const
+    template<typename CharT, typename S>
+    inline S const& CommandContext<CharT, S>::GetSource() const
     {
         return source;
     }
 
-    template<typename S>
-    inline RedirectModifier<S> CommandContext<S>::GetRedirectModifier() const
+    template<typename CharT, typename S>
+    inline RedirectModifier<CharT, S> CommandContext<CharT, S>::GetRedirectModifier() const
     {
         return context->modifier;
     }
 
-    template<typename S>
-    inline StringRange CommandContext<S>::GetRange() const
+    template<typename CharT, typename S>
+    inline StringRange CommandContext<CharT, S>::GetRange() const
     {
         return context->range;
     }
 
-    template<typename S>
-    inline std::string_view CommandContext<S>::GetInput() const
+    template<typename CharT, typename S>
+    inline std::basic_string_view<CharT> CommandContext<CharT, S>::GetInput() const
     {
         return context->input;
     }
 
-    template<typename S>
-    inline CommandNode<S>* CommandContext<S>::GetRootNode() const
+    template<typename CharT, typename S>
+    inline CommandNode<CharT, S>* CommandContext<CharT, S>::GetRootNode() const
     {
         return context->rootNode;
     }
 
-    template<typename S>
-    inline std::vector<ParsedCommandNode<S>>& CommandContext<S>::GetNodes() const
+    template<typename CharT, typename S>
+    inline std::vector<ParsedCommandNode<CharT, S>>& CommandContext<CharT, S>::GetNodes() const
     {
         return context->nodes;
     }
 
-    template<typename S>
-    inline bool CommandContext<S>::HasNodes() const
+    template<typename CharT, typename S>
+    inline bool CommandContext<CharT, S>::HasNodes() const
     {
         return context->nodes.size() > 0;
     }
 
-    template<typename S>
-    inline bool CommandContext<S>::IsForked() const
+    template<typename CharT, typename S>
+    inline bool CommandContext<CharT, S>::IsForked() const
     {
         return context->forks;
     }
 
-    template<typename S>
-    inline CommandContext<S>::~CommandContext()
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>::~CommandContext()
     {
         if (context)
         {
@@ -1577,36 +1689,36 @@ namespace brigadier
         }
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithInput(std::string_view input)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithInput(std::basic_string_view<CharT> input)
     {
         this->input = std::move(input);
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithSource(S source)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithSource(S source)
     {
         context->source = std::move(source);
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithArgument(std::string_view name, std::shared_ptr<IParsedArgument<S>> argument)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithArgument(std::basic_string_view<CharT> name, std::shared_ptr<IParsedArgument<CharT, S>> argument)
     {
         context->arguments.emplace(name, std::move(argument));
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithCommand(Command<S> command)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithCommand(Command<CharT, S> command)
     {
         context->command = command;
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithNode(CommandNode<S>* node, StringRange range)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithNode(CommandNode<CharT, S>* node, StringRange range)
     {
         if (node)
         {
@@ -1618,16 +1730,16 @@ namespace brigadier
         return *this;
     }
 
-    template<typename S>
-    inline CommandContext<S>& CommandContext<S>::WithChildContext(CommandContext<S> childContext)
+    template<typename CharT, typename S>
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithChildContext(CommandContext<CharT, S> childContext)
     {
         context->child = childContext;
         context->child->context->parent = this;
         return *this;
     }
 
-    template<typename S>
-    SuggestionContext<S> CommandContext<S>::FindSuggestionContext(int cursor)
+    template<typename CharT, typename S>
+    SuggestionContext<CharT, S> CommandContext<CharT, S>::FindSuggestionContext(size_t cursor)
     {
         auto& ctx = context;
         if (ctx->range.GetStart() <= cursor) {
@@ -1637,10 +1749,10 @@ namespace brigadier
                 }
                 else if (HasNodes()) {
                     auto& last = ctx->nodes.back();
-                    return SuggestionContext<S>(last.GetNode(), last.GetRange().GetEnd() + 1);
+                    return SuggestionContext<CharT, S>(last.GetNode(), last.GetRange().GetEnd() + 1);
                 }
                 else {
-                    return SuggestionContext<S>(ctx->rootNode, ctx->range.GetStart());
+                    return SuggestionContext<CharT, S>(ctx->rootNode, ctx->range.GetStart());
                 }
             }
             else {
@@ -1648,23 +1760,23 @@ namespace brigadier
                 for (auto& node : ctx->nodes) {
                     auto nodeRange = node.GetRange();
                     if (nodeRange.GetStart() <= cursor && cursor <= nodeRange.GetEnd()) {
-                        return SuggestionContext<S>(prev, nodeRange.GetStart());
+                        return SuggestionContext<CharT, S>(prev, nodeRange.GetStart());
                     }
                     prev = node.GetNode();
                 }
                 if (prev == nullptr) {
-                    throw std::runtime_error("Can't find node before cursor");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Can't find node before cursor");
                 }
-                return SuggestionContext<S>(prev, ctx->range.GetStart());
+                return SuggestionContext<CharT, S>(prev, ctx->range.GetStart());
             }
         }
-        throw std::runtime_error("Can't find node before cursor");
+        throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Can't find node before cursor");
     }
 
-    template<typename S>
-    void CommandContext<S>::Merge(CommandContext<S> other)
+    template<typename CharT, typename S>
+    void CommandContext<CharT, S>::Merge(CommandContext<CharT, S> other)
     {
-        detail::CommandContextInternal<S>* ctx = other.GetInternalContext();
+        detail::CommandContextInternal<CharT, S>* ctx = other.GetInternalContext();
         for (auto& arg : ctx->arguments)
             context->arguments.emplace(std::move(arg));
         context->command = std::move(ctx->command);
@@ -1683,50 +1795,407 @@ namespace brigadier
             ctx->child->context->parent = this;
             if (context->child.has_value())
             {
-                context->child->Merge(*ctx->child);
-                ctx->child = {};
+                context->child->Merge(std::move(*ctx->child));
             }
             else context->child = std::move(ctx->child);
         }
     }
+}
+#pragma once
 
-    template<typename S, typename T>
+#ifdef __has_include
+#  if __has_include("nameof.hpp")
+#    include "nameof.hpp"
+#    define HAS_NAMEOF
+#  endif
+#  if __has_include("magic_enum.hpp")
+#    include "magic_enum.hpp"
+#    define HAS_MAGICENUM
+#  endif
+#endif
+
+namespace brigadier
+{
+    template<typename T>
+    class ArgumentType
+    {
+    public:
+        using type = T;
+    public:
+        template<typename CharT>
+        T Parse(StringReader<CharT>& reader)
+        {
+            return reader.template ReadValue<T>();
+        }
+
+        template<typename CharT, typename S>
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        {
+            return Suggestions<CharT>::Empty();
+        }
+
+        template<typename CharT>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+#ifdef HAS_NAMEOF
+            return NAMEOF_TYPE(T).substr(NAMEOF_TYPE(T).find(NAMEOF_SHORT_TYPE(T))); // Short type + template list
+#else
+            return BRIGADIER_LITERAL(CharT, "");
+#endif
+        }
+
+        template<typename CharT>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            return {};
+        }
+    };
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(ArgumentType, Type);
+
+    enum class StringArgType {
+        SINGLE_WORD,
+        QUOTABLE_PHRASE,
+        GREEDY_PHRASE,
+    };
+
+    template<typename CharT, StringArgType str_type>
+    class StringArgumentType : public ArgumentType<std::basic_string<CharT>>
+    {
+    public:
+        StringArgumentType() {};
+
+        StringArgType GetType()
+        {
+            return str_type;
+        }
+
+        template<typename = void>
+        std::basic_string<CharT> Parse(StringReader<CharT>& reader)
+        {
+            if (str_type == StringArgType::GREEDY_PHRASE)
+            {
+                std::basic_string<CharT> text(reader.GetRemaining());
+                reader.SetCursor(reader.GetTotalLength());
+                return text;
+            }
+            else if (str_type == StringArgType::SINGLE_WORD)
+            {
+                return std::basic_string<CharT>(reader.ReadUnquotedString());
+            }
+            else
+            {
+                return reader.ReadString();
+            }
+        }
+
+        template<typename = void>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+            if constexpr (str_type == StringArgType::GREEDY_PHRASE)
+            {
+                return BRIGADIER_LITERAL(CharT, "words");
+            }
+            else if constexpr (str_type == StringArgType::SINGLE_WORD)
+            {
+                return BRIGADIER_LITERAL(CharT, "word");
+            }
+            else
+            {
+                return BRIGADIER_LITERAL(CharT, "string");
+            }
+        }
+
+        template<typename = void>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            if constexpr (str_type == StringArgType::GREEDY_PHRASE)
+            {
+                return {
+                    BRIGADIER_LITERAL(CharT, "word"),
+                    BRIGADIER_LITERAL(CharT, "words with spaces"),
+                    BRIGADIER_LITERAL(CharT, "\"and symbols\""),
+                };
+            }
+            else if constexpr (str_type == StringArgType::SINGLE_WORD)
+            {
+                return {
+                    BRIGADIER_LITERAL(CharT, "word"),
+                    BRIGADIER_LITERAL(CharT, "words_with_underscores"),
+                };
+            }
+            else
+            {
+                return {
+                    BRIGADIER_LITERAL(CharT, "\"quoted phrase\""),
+                    BRIGADIER_LITERAL(CharT, "word"),
+                    BRIGADIER_LITERAL(CharT, "\"\""),
+                };
+            }
+        }
+
+        template<typename = void>
+        static std::basic_string<CharT> EscapeIfRequired(std::basic_string_view<CharT> input)
+        {
+            for (auto c : input) {
+                if (!StringReader<CharT>::IsAllowedInUnquotedString(c)) {
+                    return Escape(std::move(input));
+                }
+            }
+            return std::basic_string<CharT>(input);
+        }
+
+        template<typename = void>
+        static std::basic_string<CharT> Escape(std::basic_string_view<CharT> input)
+        {
+            std::basic_string<CharT> result;
+            result.reserve(input.length());
+
+            result += CharT('\"');
+            for (auto c : input) {
+                if (c == CharT('\\') || c == CharT('\"')) {
+                    result += CharT('\\');
+                }
+                result += c;
+            }
+            result += CharT('\"');
+
+            return result;
+        }
+    };
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, Word, StringArgType::SINGLE_WORD);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, String, StringArgType::QUOTABLE_PHRASE);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC_CHAR(StringArgumentType, GreedyString, StringArgType::GREEDY_PHRASE);
+    BRIGADIER_SPECIALIZE_BASIC(Word);
+    BRIGADIER_SPECIALIZE_BASIC(String);
+    BRIGADIER_SPECIALIZE_BASIC(GreedyString);
+
+    class BoolArgumentType : public ArgumentType<bool>
+    {
+    public:
+        template<typename CharT, typename S>
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        {
+            builder.AutoSuggestLowerCase(std::initializer_list({ BRIGADIER_LITERAL(CharT, "true"), BRIGADIER_LITERAL(CharT, "false") }));
+            return builder.BuildFuture();
+        }
+
+        template<typename CharT>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+            return BRIGADIER_LITERAL(CharT, "bool");
+        }
+
+        template<typename CharT>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            return { 
+                BRIGADIER_LITERAL(CharT, "true"),
+                BRIGADIER_LITERAL(CharT, "false"),
+            };
+        }
+    };
+    BRIGADIER_REGISTER_ARGTYPE(BoolArgumentType, Bool);
+
+    template<typename CharT>
+    class CharArgumentType : public ArgumentType<CharT>
+    {
+    public:
+        template<typename = void>
+        CharT Parse(StringReader<CharT>& reader)
+        {
+            if (reader.CanRead())
+                return reader.Read();
+            else throw exceptions::ReaderExpectedValue(reader);
+        }
+
+        template<typename = void>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+            return BRIGADIER_LITERAL(CharT, "char");
+        }
+
+        template<typename = void>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            return { 
+                BRIGADIER_LITERAL(CharT, "c"),
+                BRIGADIER_LITERAL(CharT, "@"),
+                BRIGADIER_LITERAL(CharT, "."),
+            };
+        }
+    };
+    BRIGADIER_REGISTER_ARGTYPE_CHAR(CharArgumentType, Char);
+    BRIGADIER_SPECIALIZE_BASIC(Char);
+
+    template<typename T>
+    class ArithmeticArgumentType : public ArgumentType<T>
+    {
+        static_assert(std::is_arithmetic_v<T>, "T must be a number");
+    public:
+        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = std::numeric_limits<T>::max()) : minimum(minimum), maximum(maximum) {}
+
+        T GetMinimum() {
+            return minimum;
+        }
+        T GetMaximum() {
+            return maximum;
+        }
+
+        template<typename CharT>
+        T Parse(StringReader<CharT>& reader)
+        {
+            size_t start = reader.GetCursor();
+            T result = reader.template ReadValue<T>();
+            if (result < minimum) {
+                reader.SetCursor(start);
+                throw exceptions::ValueTooLow(reader, result, minimum);
+            }
+            if (result > maximum) {
+                reader.SetCursor(start);
+                throw exceptions::ValueTooHigh(reader, result, maximum);
+            }
+            return result;
+        }
+
+        template<typename CharT>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+            if constexpr (std::is_floating_point_v<T>)
+                return BRIGADIER_LITERAL(CharT, "float");
+            else if constexpr (std::is_integral_v<T>)
+            {
+                if constexpr (std::is_signed_v<T>)
+                    return BRIGADIER_LITERAL(CharT, "int");
+                else
+                    return BRIGADIER_LITERAL(CharT, "uint");
+            }
+            else return ArgumentType<T>::template GetTypeName<CharT>();
+        }
+
+        template<typename CharT>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            if constexpr (std::is_floating_point_v<T>)
+                return {
+                    BRIGADIER_LITERAL(CharT, "0"),
+                    BRIGADIER_LITERAL(CharT, "1.2"),
+                    BRIGADIER_LITERAL(CharT, ".5"),
+                    BRIGADIER_LITERAL(CharT, "-1"),
+                    BRIGADIER_LITERAL(CharT, "-.5"),
+                    BRIGADIER_LITERAL(CharT, "-1234.56"),
+                };
+            else if constexpr (std::is_integral_v<T>)
+            {
+                if constexpr (std::is_signed_v<T>)
+                    return {
+                        BRIGADIER_LITERAL(CharT, "0"),
+                        BRIGADIER_LITERAL(CharT, "123"),
+                        BRIGADIER_LITERAL(CharT, "-123"),
+                    };
+                else
+                    return {
+                        BRIGADIER_LITERAL(CharT, "0"),
+                        BRIGADIER_LITERAL(CharT, "123"),
+                    };
+            }
+            else return {};
+        }
+    private:
+        T minimum;
+        T maximum;
+    };
+    BRIGADIER_REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Float, float);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Double, double);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Integer, int);
+    BRIGADIER_REGISTER_ARGTYPE_SPEC(ArithmeticArgumentType, Long, long long);
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(ArithmeticArgumentType, Number);
+
+#ifdef HAS_MAGICENUM
+    template<typename T>
+    class EnumArgumentType : public ArgumentType<T>
+    {
+        static_assert(std::is_enum_v<T>, "T must be enum");
+    public:
+        template<typename CharT>
+        T Parse(StringReader<CharT>& reader)
+        {
+            size_t start = reader.GetCursor();
+            auto str = reader.ReadString();
+            auto result = magic_enum::enum_cast<T>(str);
+            if (!result.has_value())
+            {
+                reader.SetCursor(start);
+                throw exceptions::ReaderInvalidValue(reader, str);
+            }
+            return result.value();
+        }
+
+        template<typename CharT, typename S>
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        {
+            static constexpr auto names = magic_enum::enum_names<T>();
+            builder.AutoSuggestLowerCase(names);
+            return builder.BuildFuture();
+        }
+
+        template<typename CharT>
+        static constexpr std::basic_string_view<CharT> GetTypeName()
+        {
+            return BRIGADIER_LITERAL(CharT, "enum");
+        }
+
+        template<typename CharT>
+        static inline std::vector<std::basic_string_view<CharT>> GetExamples()
+        {
+            static constexpr auto names = magic_enum::enum_names<T>();
+            return std::vector<std::basic_string_view<CharT>>(names.begin(), names.end());
+        }
+    };
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(EnumArgumentType, Enum);
+#endif
+}
+#pragma once
+
+namespace brigadier
+{
+    template<typename CharT, typename S, typename T>
     class RequiredArgumentBuilder;
 
-    template<typename S>
-    class IArgumentCommandNode : public CommandNode<S>
+    template<typename CharT, typename S>
+    class IArgumentCommandNode : public CommandNode<CharT, S>
     {
     protected:
-        IArgumentCommandNode(std::string_view name) : name(name) {}
+        IArgumentCommandNode(std::basic_string_view<CharT> name) : name(name) {}
         virtual ~IArgumentCommandNode() = default;
     public:
-        virtual std::string const& GetName() {
+        virtual std::basic_string<CharT> const& GetName() {
             return name;
         }
         virtual CommandNodeType GetNodeType() { return CommandNodeType::ArgumentCommandNode; }
     protected:
-        virtual std::string_view GetSortedKey() {
+        virtual std::basic_string_view<CharT> GetSortedKey() {
             return name;
         }
     protected:
-        std::string name;
+        std::basic_string<CharT> name;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(IArgumentCommandNode);
 
-    template<typename S, typename T>
-    class ArgumentCommandNode : public IArgumentCommandNode<S>
+    template<typename CharT, typename S, typename T>
+    class ArgumentCommandNode : public IArgumentCommandNode<CharT, S>
     {
     private:
-        static constexpr std::string_view USAGE_ARGUMENT_OPEN = "<";
-        static constexpr std::string_view USAGE_ARGUMENT_CLOSE = ">";
+        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_OPEN = BRIGADIER_LITERAL(CharT, "<");
+        static constexpr std::basic_string_view<CharT> USAGE_ARGUMENT_CLOSE = BRIGADIER_LITERAL(CharT, ">");
     public:
         template<typename... Args>
-        ArgumentCommandNode(std::string_view name, Args&&... args)
-            : IArgumentCommandNode<S>(name)
+        ArgumentCommandNode(std::basic_string_view<CharT> name, Args&&... args)
+            : IArgumentCommandNode<CharT, S>(name)
             , type(std::forward<Args>(args)...)
         {}
         virtual ~ArgumentCommandNode() = default;
     public:
-        inline SuggestionProvider<S> const& GetCustomSuggestions() const {
+        inline SuggestionProvider<CharT, S> const& GetCustomSuggestions() const {
             return customSuggestions;
         }
 
@@ -1734,103 +2203,112 @@ namespace brigadier
             return type;
         }
     public:
-        virtual std::string GetUsageText() {
-            std::string ret;
-            constexpr auto typeName = T::GetTypeName();
+        virtual std::basic_string<CharT> GetUsageText() {
+            std::basic_string<CharT> ret;
+            constexpr auto typeName = T::template GetTypeName<CharT>();
             ret.reserve(this->name.size() + USAGE_ARGUMENT_OPEN.size() + USAGE_ARGUMENT_CLOSE.size() + typeName.size() > 0 ? typeName.size() + 2 : 0);
             ret = USAGE_ARGUMENT_OPEN;
             if constexpr (typeName.size() > 0)
             {
                 ret += typeName;
-                ret += ": ";
+                ret += BRIGADIER_LITERAL(CharT, ": ");
             }
             ret += this->name;
             ret += USAGE_ARGUMENT_CLOSE;
             return ret;
         }
-        virtual std::vector<std::string_view> GetExamples() {
-            return type.GetExamples();
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() {
+            return type.template GetExamples<CharT>();
         }
-        virtual void Parse(StringReader& reader, CommandContext<S>& contextBuilder) {
-            int start = reader.GetCursor();
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {
+            size_t start = reader.GetCursor();
             using Type = typename T::type;
             Type result = type.Parse(reader);
-            std::shared_ptr<ParsedArgument<S, T>> parsed = std::make_shared<ParsedArgument<S, T>>(start, reader.GetCursor(), std::move(result));
+            std::shared_ptr<ParsedArgument<CharT, S, T>> parsed = std::make_shared<ParsedArgument<CharT, S, T>>(start, reader.GetCursor(), std::move(result));
 
             contextBuilder.WithArgument(this->name, parsed);
             contextBuilder.WithNode(this, parsed->GetRange());
         }
-        virtual std::future<Suggestions> ListSuggestions(CommandContext<S>& context, SuggestionsBuilder& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
         {
             if (customSuggestions == nullptr) {
-                return type.template ListSuggestions<S>(context, builder);
+                return type.template ListSuggestions<CharT, S>(context, builder);
             }
             else {
                 return customSuggestions(context, builder);
             }
         }
     protected:
-        virtual bool IsValidInput(std::string_view input) {
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) {
             try {
-                StringReader reader = StringReader(input);
+                StringReader<CharT> reader = StringReader<CharT>(input);
                 type.Parse(reader);
                 return !reader.CanRead() || reader.Peek() == ' ';
             }
-            catch (CommandSyntaxException const&) {
+            catch (CommandSyntaxException<CharT> const&) {
                 return false;
             }
         }
     private:
-        friend class RequiredArgumentBuilder<S, T>;
+        friend class RequiredArgumentBuilder<CharT, S, T>;
         T type;
-        SuggestionProvider<S> customSuggestions = nullptr;
+        SuggestionProvider<CharT, S> customSuggestions = nullptr;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ArgumentCommandNode);
+}
+#pragma once
 
-    template<typename S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
     class MultiArgumentBuilder
     {
     public:
-        using B = MultiArgumentBuilder<S>;
+        using B = MultiArgumentBuilder<CharT, S>;
     public:
-        MultiArgumentBuilder(std::vector<std::shared_ptr<CommandNode<S>>> nodes, int master = -1) : nodes(std::move(nodes)), master(master) {}
+        MultiArgumentBuilder(std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes, int master = -1) : nodes(std::move(nodes)), master(master) {}
         MultiArgumentBuilder(MultiArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
 
         inline B* GetThis() { return this; }
 
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto Then(Args&&... args) {
+            return Then<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next, typename Type = void, typename... Args>
         auto Then(Args&&... args)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
 
             if constexpr (std::is_same_v<Type, void>) {
-                using next_node = typename Next<S>::node_type;
+                using next_node = typename Next<CharT, S>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto new_node = std::make_shared<next_node>(std::move(node_builder));
                 for (auto& node : nodes) {
                     node->AddChild(new_node);
                 }
-                return Next<S>(std::move(new_node));
+                return Next<CharT, S>(std::move(new_node));
             }
             else {
-                using next_node = typename Next<S, Type>::node_type;
+                using next_node = typename Next<CharT, S, Type>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto new_node = std::make_shared<next_node>(std::move(node_builder));
                 for (auto& node : nodes) {
                     node->AddChild(new_node);
                 }
-                return Next<S, Type>(std::move(new_node));
+                return Next<CharT, S, Type>(std::move(new_node));
             }
         }
 
-        auto Then(std::shared_ptr<LiteralCommandNode<S>> argument)
+        auto Then(std::shared_ptr<LiteralCommandNode<CharT, S>> argument)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -1842,11 +2320,11 @@ namespace brigadier
         }
 
         template<typename T>
-        auto Then(std::shared_ptr<ArgumentCommandNode<S, T>> argument)
+        auto Then(std::shared_ptr<ArgumentCommandNode<CharT, S, T>> argument)
         {
             for (auto& node : nodes) {
                 if (node->redirect != nullptr) {
-                    throw std::runtime_error("Cannot add children to a redirected node");
+                    throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
                 }
             }
             for (auto& node : nodes) {
@@ -1857,7 +2335,7 @@ namespace brigadier
             return GetBuilder(std::move(argument));
         }
 
-        B& Executes(Command<S> command, bool only_master = true)
+        B& Executes(Command<CharT, S> command, bool only_master = true)
         {
             for (size_t i = 0; i < nodes.size(); ++i) {
                 if (master == -1 || master == i || !only_master) {
@@ -1879,36 +2357,36 @@ namespace brigadier
             return *GetThis();
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target, bool only_master = true)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target, bool only_master = true)
         {
             return Forward(std::move(target), nullptr, false, only_master);
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier, bool only_master = true)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier, bool only_master = true)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, false, only_master);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier, bool only_master = true)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier, bool only_master = true)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, true, only_master);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier, bool only_master = true)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier, bool only_master = true)
         {
             return Forward(std::move(target), modifier, true, only_master);
         }
 
-        void Forward(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier, bool fork, bool only_master = true)
+        void Forward(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier, bool fork, bool only_master = true)
         {
             for (size_t i = 0; i < nodes.size(); ++i) {
                 if (master == -1 || master == i || !only_master) {
                     auto& node = nodes[i];
                     if (node->GetChildren().size() > 0)
                     {
-                        throw std::runtime_error("Cannot forward a node with children");
+                        throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot forward a node with children");
                     }
                 }
             }
@@ -1922,18 +2400,23 @@ namespace brigadier
             }
         }
     protected:
-        std::vector<std::shared_ptr<CommandNode<S>>> nodes;
+        std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes;
         int master = -1;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(MultiArgumentBuilder);
 
     // multi builder
-    template<typename S>
-    inline MultiArgumentBuilder<S> GetBuilder(std::vector<std::shared_ptr<CommandNode<S>>> nodes, int master = -1)
+    template<typename CharT, typename S>
+    inline MultiArgumentBuilder<CharT, S> GetBuilder(std::vector<std::shared_ptr<CommandNode<CharT, S>>> nodes, int master = -1)
     {
-        return MultiArgumentBuilder<S>(std::move(nodes), master);
+        return MultiArgumentBuilder<CharT, S>(std::move(nodes), master);
     }
+}
+#pragma once
 
-    template<typename S, typename B, typename NodeType>
+namespace brigadier
+{
+    template<typename CharT, typename S, typename B, typename NodeType>
     class ArgumentBuilder
     {
     public:
@@ -1942,98 +2425,106 @@ namespace brigadier
         ArgumentBuilder(std::shared_ptr<node_type> node)
         {
             if (node) this->node = std::move(node);
-            else throw std::runtime_error("Cannot build empty node");
+            else throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot build empty node");
         }
         ArgumentBuilder(ArgumentBuilder const&) = delete; // no copying. Use reference or GetThis().
 
         inline B* GetThis() { return static_cast<B*>(this); }
 
         inline std::shared_ptr<node_type> GetNode() const { return node; }
-        inline std::shared_ptr<CommandNode<S>> GetCommandNode() const { return std::static_pointer_cast<CommandNode<S>>(node); }
+        inline std::shared_ptr<CommandNode<CharT, S>> GetCommandNode() const { return std::static_pointer_cast<CommandNode<CharT, S>>(node); }
         inline operator std::shared_ptr<node_type>() const { return GetNode(); }
-        inline operator std::shared_ptr<CommandNode<S>>() const { return GetCommandNode(); }
+        inline operator std::shared_ptr<CommandNode<CharT, S>>() const { return GetCommandNode(); }
 
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto Then(Args&&... args) {
+            return Then<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next, typename Type = void, typename... Args>
         auto Then(Args&&... args)
         {
             if (node->redirect != nullptr) {
-                throw std::runtime_error("Cannot add children to a redirected node");
+                throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
             }
 
             if constexpr (std::is_same_v<Type, void>) {
-                using next_node = typename Next<S>::node_type;
+                using next_node = typename Next<CharT, S>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = node->children.find(name);
                 if (arg == node->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     node->AddChild(new_node);
-                    return Next<S>(std::move(new_node));
+                    return Next<CharT, S>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
             else
             {
-                using next_node = typename Next<S, Type>::node_type;
+                using next_node = typename Next<CharT, S, Type>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = node->children.find(name);
                 if (arg == node->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     node->AddChild(new_node);
-                    return Next<S, Type>(std::move(new_node));
+                    return Next<CharT, S, Type>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
         }
 
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto ThenOptional(Args&&... args) {
+            return ThenOptional<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next, typename Type = void, typename... Args>
         auto ThenOptional(Args&&... args)
         {
             auto opt = Then<Next, Type, Args...>(std::forward<Args>(args)...);
-            return MultiArgumentBuilder<S>({ opt.GetCommandNode(), GetCommandNode() }, 0);
+            return MultiArgumentBuilder<CharT, S>({ opt.GetCommandNode(), GetCommandNode() }, 0);
         }
 
-        auto Then(std::shared_ptr<LiteralCommandNode<S>> argument)
-        {
-            if (node->redirect != nullptr) {
-                throw std::runtime_error("Cannot add children to a redirected node");
-            }
-            if (argument != nullptr) {
-                node->AddChild(std::move(argument));
-            }
-            return GetBuilder(std::move(node->GetChild(argument)));
-        }
+        //auto Then(std::shared_ptr<LiteralCommandNode<CharT, S>> argument)
+        //{
+        //    if (node->redirect != nullptr) {
+        //        throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
+        //    }
+        //    if (argument != nullptr) {
+        //        node->AddChild(std::move(argument));
+        //    }
+        //    return GetBuilder<CharT, S>(std::move(node->GetChild(argument)));
+        //}
 
-        template<typename T>
-        auto Then(std::shared_ptr<ArgumentCommandNode<S, T>> argument)
-        {
-            if (node->redirect != nullptr) {
-                throw std::runtime_error("Cannot add children to a redirected node");
-            }
-            if (argument != nullptr) {
-                node->AddChild(std::move(argument));
-            }
-            return GetBuilder(std::move(node->GetChild(argument)));
-        }
+        //template<typename T>
+        //auto Then(std::shared_ptr<ArgumentCommandNode<CharT, S, T>> argument)
+        //{
+        //    if (node->redirect != nullptr) {
+        //        throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Cannot add children to a redirected node");
+        //    }
+        //    if (argument != nullptr) {
+        //        node->AddChild(std::move(argument));
+        //    }
+        //    return GetBuilder<CharT, S>(std::move(node->GetChild(argument)));
+        //}
 
-        B& Executes(Command<S> command)
+        B& Executes(Command<CharT, S> command)
         {
             node->command = command;
             return *GetThis();
@@ -2045,119 +2536,134 @@ namespace brigadier
             return *GetThis();
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target)
         {
             return Forward(std::move(target), nullptr, false);
         }
 
-        inline auto Redirect(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier)
+        inline auto Redirect(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, false);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, SingleRedirectModifier<S> modifier)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, SingleRedirectModifier<CharT, S> modifier)
         {
-            return Forward(std::move(target), modifier ? [modifier](CommandContext<S>& context) -> std::vector<S> {
+            return Forward(std::move(target), modifier ? [modifier](CommandContext<CharT, S>& context) -> std::vector<CharT, S> {
                 return { modifier(context) }; } : nullptr, true);
         }
 
-        inline auto Fork(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier)
+        inline auto Fork(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier)
         {
             return Forward(std::move(target), modifier, true);
         }
 
-        void Forward(std::shared_ptr<CommandNode<S>> target, RedirectModifier<S> modifier, bool fork)
+        void Forward(std::shared_ptr<CommandNode<CharT, S>> target, RedirectModifier<CharT, S> modifier, bool fork)
         {
             if (node->GetChildren().size() > 0)
             {
-                throw std::runtime_error("Cannot forward a node with children");
+                throw RuntimeError<CharT>() << "Cannot forward a node with children";
             }
             node->redirect = std::move(target);
             node->modifier = modifier;
             node->forks = fork;
         }
     protected:
-        template<typename _S, typename _B>
+        template<typename, typename, typename>
         friend class RequiredArgumentBuilder;
 
         std::shared_ptr<node_type> node;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ArgumentBuilder);
+}
+#pragma once
 
-    template<typename S>
-    class LiteralArgumentBuilder : public ArgumentBuilder<S, LiteralArgumentBuilder<S>, LiteralCommandNode<S>>
+namespace brigadier
+{
+    template<typename CharT, typename S>
+    class LiteralArgumentBuilder : public ArgumentBuilder<CharT, S, LiteralArgumentBuilder<CharT, S>, LiteralCommandNode<CharT, S>>
     {
     public:
-        LiteralArgumentBuilder(std::shared_ptr<LiteralCommandNode<S>> node) : ArgumentBuilder<S, LiteralArgumentBuilder<S>, LiteralCommandNode<S>>(std::move(node)) {}
+        LiteralArgumentBuilder(std::shared_ptr<LiteralCommandNode<CharT, S>> node) : ArgumentBuilder<CharT, S, LiteralArgumentBuilder<CharT, S>, LiteralCommandNode<CharT, S>>(std::move(node)) {}
     };
-    REGISTER_ARGTYPE_TEMPL(LiteralArgumentBuilder, Literal);
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(LiteralArgumentBuilder, Literal);
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(LiteralArgumentBuilder);
 
     // single builder
-    template<typename S>
-    inline LiteralArgumentBuilder<S> GetBuilder(std::shared_ptr<LiteralCommandNode<S>> node)
+    template<typename CharT, typename S>
+    inline LiteralArgumentBuilder<CharT, S> GetBuilder(std::shared_ptr<LiteralCommandNode<CharT, S>> node)
     {
-        return LiteralArgumentBuilder<S>(std::move(node));
+        return LiteralArgumentBuilder<CharT, S>(std::move(node));
     }
 
     // new single builder
-    template<typename S, typename... Args>
-    inline LiteralArgumentBuilder<S> MakeLiteral(Args&&... args)
+    template<typename CharT, typename S, typename... Args>
+    inline LiteralArgumentBuilder<CharT, S> MakeLiteral(Args&&... args)
     {
-        return LiteralArgumentBuilder<S>(std::make_shared<LiteralCommandNode<S>>(std::forward<Args>(args)...));
+        return LiteralArgumentBuilder<CharT, S>(std::make_shared<LiteralCommandNode<CharT, S>>(std::forward<Args>(args)...));
     }
+}
+#pragma once
 
-    template<typename S, typename T>
-    class RequiredArgumentBuilder : public ArgumentBuilder<S, RequiredArgumentBuilder<S, T>, ArgumentCommandNode<S, T>>
+namespace brigadier
+{
+    template<typename CharT, typename S, typename T>
+    class RequiredArgumentBuilder : public ArgumentBuilder<CharT, S, RequiredArgumentBuilder<CharT, S, T>, ArgumentCommandNode<CharT, S, T>>
     {
     public:
-        RequiredArgumentBuilder(std::shared_ptr<ArgumentCommandNode<S, T>> node) : ArgumentBuilder<S, RequiredArgumentBuilder<S, T>, ArgumentCommandNode<S, T>>(std::move(node)) {}
+        RequiredArgumentBuilder(std::shared_ptr<ArgumentCommandNode<CharT, S, T>> node) : ArgumentBuilder<CharT, S, RequiredArgumentBuilder<CharT, S, T>, ArgumentCommandNode<CharT, S, T>>(std::move(node)) {}
 
-        RequiredArgumentBuilder<S, T>& Suggests(SuggestionProvider<S> provider)
+        RequiredArgumentBuilder<CharT, S, T>& Suggests(SuggestionProvider<CharT, S> provider)
         {
             this->node->suggestionsProvider = provider;
             return *this;
         }
     };
-    REGISTER_ARGTYPE_TEMPL(RequiredArgumentBuilder, Argument);
+    BRIGADIER_REGISTER_ARGTYPE_TEMPL(RequiredArgumentBuilder, Argument);
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(RequiredArgumentBuilder);
 
     // single builder
-    template<typename S, template<typename...> typename Spec, typename... Types>
-    inline RequiredArgumentBuilder<S, Spec<S, Types...>> GetBuilder(std::shared_ptr<ArgumentCommandNode<S, Spec<S, Types...>>> node)
+    template<typename CharT, typename S, template<typename...> typename Spec, typename... Types>
+    inline RequiredArgumentBuilder<CharT, S, Spec<CharT, S, Types...>> GetBuilder(std::shared_ptr<ArgumentCommandNode<CharT, S, Spec<CharT, S, Types...>>> node)
     {
-        return RequiredArgumentBuilder<S, Spec<S, Types...>>(std::move(node));
+        return RequiredArgumentBuilder<CharT, S, Spec<CharT, S, Types...>>(std::move(node));
     }
 
     // new single builder
-    template<typename S, template<typename...> typename Spec, typename Type, typename... Args>
-    inline RequiredArgumentBuilder<S, Spec<S, Type>> MakeArgument(Args&&... args)
+    template<typename CharT, typename S, template<typename...> typename Spec, typename Type, typename... Args>
+    inline RequiredArgumentBuilder<CharT, S, Spec<CharT, S, Type>> MakeArgument(Args&&... args)
     {
-        return RequiredArgumentBuilder<S, Spec<S, Type>>(std::make_shared<ArgumentCommandNode<S, Spec<S, Type>>>(std::forward<Args>(args)...));
+        return RequiredArgumentBuilder<CharT, S, Spec<CharT, S, Type>>(std::make_shared<ArgumentCommandNode<CharT, S, Spec<CharT, S, Type>>>(std::forward<Args>(args)...));
     }
+}
+#pragma once
 
-    template<typename S>
+namespace brigadier
+{
+    template<typename CharT, typename S>
     class CommandDispatcher;
 
-    template<typename S>
-    class BasicParseResults
+    template<typename CharT, typename S>
+    class ParseResults
     {
     public:
-        BasicParseResults(CommandContext<S> context, StringReader reader, std::map<CommandNode<S>*, CommandSyntaxException> exceptions)
+        ParseResults(CommandContext<CharT, S> context, StringReader<CharT> reader, std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> exceptions)
             : context(std::move(context))
             , reader(std::move(reader))
             , exceptions(std::move(exceptions))
         {}
-        BasicParseResults(CommandContext<S> context, StringReader reader)
+        ParseResults(CommandContext<CharT, S> context, StringReader<CharT> reader)
             : context(std::move(context))
             , reader(std::move(reader))
         {}
 
-        BasicParseResults(CommandContext<S> context) : BasicParseResults(std::move(context), StringReader()) {}
+        ParseResults(CommandContext<CharT, S> context) : ParseResults(std::move(context), StringReader<CharT>()) {}
     public:
-        inline CommandContext<S> const& GetContext() const { return context; }
-        inline StringReader      const& GetReader()  const { return reader; }
-        inline std::map<CommandNode<S>*, CommandSyntaxException> const& GetExceptions() const { return exceptions; }
+        inline CommandContext<CharT, S> const& GetContext() const { return context; }
+        inline StringReader<CharT> const& GetReader()  const { return reader; }
+        inline std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
 
-        inline bool IsBetterThan(BasicParseResults<S> const& other) const
+        inline bool IsBetterThan(ParseResults<CharT, S> const& other) const
         {
             if (!GetReader().CanRead() && other.GetReader().CanRead()) {
                 return true;
@@ -2174,69 +2680,73 @@ namespace brigadier
             return false;
         }
 
-        inline void Reset(StringReader new_reader)
+        inline void Reset(StringReader<CharT> new_reader)
         {
             exceptions.clear();
             reader = std::move(new_reader);
         }
-        inline void Reset(S source, CommandNode<S>* root, int start, StringReader reader = {})
+        inline void Reset(S source, CommandNode<CharT, S>* root, size_t start, StringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, start);
         }
-        inline void Reset(S source, CommandNode<S>* root, StringRange range, StringReader reader = {})
+        inline void Reset(S source, CommandNode<CharT, S>* root, StringRange range, StringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, std::move(range));
         }
-
     private:
-        template<typename _S>
+        template<typename, typename>
         friend class CommandDispatcher;
 
-        CommandContext<S> context;
-        std::map<CommandNode<S>*, CommandSyntaxException> exceptions;
-        StringReader reader;
+        CommandContext<CharT, S> context;
+        std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> exceptions;
+        StringReader<CharT> reader;
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParseResults);
+}
+#pragma once
 
+namespace brigadier
+{
     /**
     The core command dispatcher, for registering, parsing, and executing commands.
-
+    
     \param <S> a custom "source" type, such as a user or originator of a command
     */
-    template<typename S>
+    template<typename CharT, typename S>
     class CommandDispatcher
     {
     public:
         /**
         The string required to separate individual arguments in an input string
         */
-        static constexpr std::string_view ARGUMENT_SEPARATOR = " ";
+        static constexpr std::basic_string_view<CharT> ARGUMENT_SEPARATOR = BRIGADIER_LITERAL(CharT, " ");
 
         /**
         The char required to separate individual arguments in an input string
         */
-        static constexpr char ARGUMENT_SEPARATOR_CHAR = ' ';
+        static constexpr CharT ARGUMENT_SEPARATOR_CHAR = CharT(' ');
     private:
-        static constexpr std::string_view USAGE_OPTIONAL_OPEN = "[";
-        static constexpr std::string_view USAGE_OPTIONAL_CLOSE = "]";
-        static constexpr std::string_view USAGE_REQUIRED_OPEN = "(";
-        static constexpr std::string_view USAGE_REQUIRED_CLOSE = ")";
-        static constexpr std::string_view USAGE_OR = "|";
+        static constexpr std::basic_string_view<CharT> USAGE_OPTIONAL_OPEN = BRIGADIER_LITERAL(CharT, "[");
+        static constexpr std::basic_string_view<CharT> USAGE_OPTIONAL_CLOSE = BRIGADIER_LITERAL(CharT, "]");
+        static constexpr std::basic_string_view<CharT> USAGE_REQUIRED_OPEN = BRIGADIER_LITERAL(CharT, "(");
+        static constexpr std::basic_string_view<CharT> USAGE_REQUIRED_CLOSE = BRIGADIER_LITERAL(CharT, ")");
+        static constexpr std::basic_string_view<CharT> USAGE_OR = BRIGADIER_LITERAL(CharT, "|");
     public:
         /**
         Create a new CommandDispatcher with the specified root node.
-
+        
         This is often useful to copy existing or pre-defined command trees.
-
+        
         \param root the existing RootCommandNode to use as the basis for this tree
         */
-        CommandDispatcher(RootCommandNode<S>* root) : root(std::make_shared<RootCommandNode<S>>(*root)) {}
+        CommandDispatcher(RootCommandNode<CharT, S>* root) : root(std::make_shared<RootCommandNode<CharT, S>>(*root)) {}
 
         /**
         Creates a new CommandDispatcher with an empty command tree.
         */
-        CommandDispatcher() : root(std::make_shared<RootCommandNode<S>>()) {}
+        CommandDispatcher() : root(std::make_shared<RootCommandNode<CharT, S>>()) {}
 
         /**
         Utility method for registering new commands.
@@ -2244,47 +2754,52 @@ namespace brigadier
         \param args these arguments are forwarded to builder to node constructor. The first param is always node name.
         \return the builder with node added to this tree
         */
+        template<template<typename...> typename Next, template<typename> typename Type, typename... Args>
+        auto Register(Args&&... args) {
+            return Register<Next, Type<CharT>, Args...>(std::forward<Args>(args)...);
+        }
         template<template<typename...> typename Next = Literal, typename Type = void, typename... Args>
         auto Register(Args&&... args)
         {
             if constexpr (std::is_same_v<Type, void>) {
-                using next_node = typename Next<S>::node_type;
+                using next_node = typename Next<CharT, S>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = root->children.find(name);
                 if (arg == root->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     root->AddChild(new_node);
-                    return Next<S>(std::move(new_node));
+                    return Next<CharT, S>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
-            else {
-                using next_node = typename Next<S, Type>::node_type;
+            else
+            {
+                using next_node = typename Next<CharT, S, Type>::node_type;
                 next_node node_builder(std::forward<Args>(args)...);
                 auto& name = node_builder.GetName();
                 auto arg = root->children.find(name);
                 if (arg == root->children.end()) {
                     auto new_node = std::make_shared<next_node>(std::move(node_builder));
                     root->AddChild(new_node);
-                    return Next<S, Type>(std::move(new_node));
+                    return Next<CharT, S, Type>(std::move(new_node));
                 }
                 else {
                     auto& arg_ptr = arg->second;
                     if (arg_ptr) {
                         if (node_builder.GetNodeType() != arg_ptr->GetNodeType()) {
-                            throw std::runtime_error("Node type (literal/argument) mismatch!");
+                            throw RuntimeError<CharT>() << BRIGADIER_LITERAL(CharT, "Node type (literal/argument) mismatch!");
                         }
                     }
-                    return Next<S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
+                    return Next<CharT, S, Type>(std::static_pointer_cast<next_node>(arg_ptr));
                 }
             }
         }
@@ -2294,7 +2809,7 @@ namespace brigadier
 
         \param consumer the new result consumer to be called
         */
-        void SetConsumer(ResultConsumer<S> consumer)
+        void SetConsumer(ResultConsumer<CharT, S> consumer)
         {
             this->consumer = consumer;
         }
@@ -2308,7 +2823,7 @@ namespace brigadier
 
         \return root of the command tree
         */
-        std::shared_ptr<RootCommandNode<S>> GetRoot() const
+        std::shared_ptr<RootCommandNode<CharT, S>> GetRoot() const
         {
             return root;
         }
@@ -2316,12 +2831,12 @@ namespace brigadier
         /**
         Parses and executes a given command.
 
-        This is a shortcut to first Parse(StringReader, Object) and then Execute(BasicParseResults).
+        This is a shortcut to first Parse(StringReader, Object) and then Execute(ParseResults).
 
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
         If this command returns a value, then it successfully executed something. If it could not parse the command, or the execution was a failure,
-        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
@@ -2337,27 +2852,26 @@ namespace brigadier
         \param source a custom "source" object, usually representing the originator of this command
         \return a numeric result from a "command" that was performed
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
-        \see Execute(BasicParseResults)
+        \see Execute(ParseResults)
         \see Execute(StringReader, Object)
         */
-        int Execute(std::string_view input, S source)
+        int Execute(std::basic_string_view<CharT> input, S source)
         {
-            StringReader reader = StringReader(input);
-            return Execute(reader, std::move(source));
+            return Execute(StringReader<CharT>(input), std::move(source));
         }
 
         /**
         Parses and executes a given command.
 
-        This is a shortcut to first Parse(StringReader, Object) and then Execute(BasicParseResults).
+        This is a shortcut to first Parse(StringReader, Object) and then Execute(ParseResults).
 
         It is recommended to parse and execute as separate steps, as parsing is often the most expensive step, and easiest to cache.
 
         If this command returns a value, then it successfully executed something. If it could not parse the command, or the execution was a failure,
-        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        then an exception will be thrown. Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
@@ -2368,21 +2882,20 @@ namespace brigadier
         After each and any command is ran, a registered callback given to SetConsumer(ResultConsumer)
         will be notified of the result and success of the command. You can use that method to gather more meaningful
         results than this method will return, especially when a command forks.
-
+    
         \param input a command string to parse & execute
         \param source a custom "source" object, usually representing the originator of this command
         \return a numeric result from a "command" that was performed
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
-        \see Execute(BasicParseResults)
+        \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        int Execute(StringReader& input, S source)
+        int Execute(StringReader<CharT> input, S source)
         {
-            auto parse = Parse(input, std::move(source));
-            return Execute(parse);
+            return Execute(Parse(std::move(input), std::move(source)));
         }
 
         /**
@@ -2390,12 +2903,12 @@ namespace brigadier
 
         If this command returns a value, then it successfully executed something. If the execution was a failure,
         then an exception will be thrown.
-        Most exceptions will be of type CommandSyntaxException, but it is possible that a std::runtime_error
+        Most exceptions will be of type CommandSyntaxException, but it is possible that a RuntimeError
         may bubble up from the result of a command. The meaning behind the returned result is arbitrary, and will depend
         entirely on what command was performed.
 
         If the command passes through a node that is CommandNode::IsFork() then it will be 'forked'.
-        A forked command will not bubble up any CommandSyntaxException's, and the 'result' returned will turn into
+        A forked command will not bubble up any CommandSyntaxException<CharT>'s, and the 'result' returned will turn into
         'amount of successful commands executes'.
 
         After each and any command is ran, a registered callback given to SetConsumer(ResultConsumer)
@@ -2405,23 +2918,23 @@ namespace brigadier
         \param parse the result of a successful Parse(StringReader, Object)
         \return a numeric result from a "command" that was performed.
         \throws CommandSyntaxException if the command failed to parse or execute
-        \throws std::runtime_error if the command failed to execute and was not handled gracefully
+        \throws RuntimeError if the command failed to execute and was not handled gracefully
         \see Parse(String, Object)
         \see Parse(StringReader, Object)
         \see Execute(String, Object)
         \see Execute(StringReader, Object)
         */
-        int Execute(BasicParseResults<S>& parse)
+        int Execute(ParseResults<CharT, S> const& parse)
         {
             if (parse.GetReader().CanRead()) {
                 if (parse.GetExceptions().size() == 1) {
-                    throw* parse.GetExceptions().begin();
+                    throw parse.GetExceptions().begin()->second;
                 }
                 else if (parse.GetContext().GetRange().IsEmpty()) {
-                    throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownCommand(parse.GetReader());
+                    throw exceptions::DispatcherUnknownCommand(parse.GetReader());
                 }
                 else {
-                    throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownArgument(parse.GetReader());
+                    throw exceptions::DispatcherUnknownArgument(parse.GetReader());
                 }
             }
 
@@ -2432,21 +2945,20 @@ namespace brigadier
             auto command = parse.GetReader().GetString();
             auto original = parse.GetContext();
             original.WithInput(command);
-            std::vector<CommandContext<S>> contexts = { original };
-            std::vector<CommandContext<S>> next;
+            std::vector<CommandContext<CharT, S>> contexts = { original };
+            std::vector<CommandContext<CharT, S>> next;
 
             while (!contexts.empty()) {
                 for (auto& context : contexts) {
-                    CommandContext<S>* child = context.GetChild();
+                    CommandContext<CharT, S>* child = context.GetChild();
                     if (child != nullptr) {
                         forked |= context.IsForked();
                         if (child->HasNodes()) {
                             foundCommand = true;
-                            RedirectModifier<S> modifier = context.GetRedirectModifier();
+                            RedirectModifier<CharT, S> modifier = context.GetRedirectModifier();
                             if (modifier == nullptr) {
                                 next.push_back(child->GetFor(context.GetSource()));
-                            }
-                            else {
+                            } else {
                                 try {
                                     auto results = modifier(context);
                                     if (!results.empty()) {
@@ -2455,16 +2967,15 @@ namespace brigadier
                                         }
                                     }
                                 }
-                                catch (CommandSyntaxException const& ex) {
+                                catch (CommandSyntaxException<CharT> const&) {
                                     consumer(context, false, 0);
                                     if (!forked) {
-                                        throw ex;
+                                        throw;
                                     }
                                 }
                             }
                         }
-                    }
-                    else if (context.GetCommand() != nullptr) {
+                    } else if (context.GetCommand() != nullptr) {
                         foundCommand = true;
                         try {
                             int value = context.GetCommand()(context);
@@ -2472,10 +2983,10 @@ namespace brigadier
                             consumer(context, true, value);
                             successfulForks++;
                         }
-                        catch (CommandSyntaxException const& ex) {
+                        catch (CommandSyntaxException<CharT> const&) {
                             consumer(context, false, 0);
                             if (!forked) {
-                                throw ex;
+                                throw;
                             }
                         }
                     }
@@ -2486,7 +2997,7 @@ namespace brigadier
 
             if (!foundCommand) {
                 consumer(original, false, 0);
-                throw CommandSyntaxException::BuiltInExceptions::DispatcherUnknownCommand(parse.GetReader());
+                throw exceptions::DispatcherUnknownCommand(parse.GetReader());
             }
 
             return forked ? successfulForks : result;
@@ -2501,27 +3012,27 @@ namespace brigadier
         If the command passes through a node that is CommandNode::IsFork() then the resulting context will be marked as 'forked'.
         Forked contexts may contain child contexts, which may be modified by the RedirectModifier attached to the fork.
 
-        Parsing a command can never fail, you will always be provided with a new BasicParseResults.
+        Parsing a command can never fail, you will always be provided with a new ParseResults.
         However, that does not mean that it will always parse into a valid command. You should inspect the returned results
-        to check for validity. If its BasicParseResults::GetReader() StringReader::CanRead() then it did not finish
+        to check for validity. If its ParseResults::GetReader() StringReader<CharT>::CanRead() then it did not finish
         parsing successfully. You can use that position as an indicator to the user where the command stopped being valid.
-        You may inspect BasicParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
+        You may inspect ParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
         not find any valid commands. It may contain multiple exceptions, one for each "potential node" that it could have visited,
         explaining why it did not go down that node.
 
-        When you eventually call Execute(BasicParseResults) with the result of this method, the above error checking
+        When you eventually call Execute(ParseResults) with the result of this method, the above error checking
         will occur. You only need to inspect it yourself if you wish to handle that yourself.
 
         \param command a command string to parse
         \param source a custom "source" object, usually representing the originator of this command
         \return the result of parsing this command
         \see Parse(StringReader, Object)
-        \see Execute(BasicParseResults)
+        \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        BasicParseResults<S> Parse(std::string_view command, S source)
+        ParseResults<CharT, S> Parse(std::basic_string_view<CharT> command, S source)
         {
-            StringReader reader = StringReader(command);
+            StringReader<CharT> reader = StringReader<CharT>(command);
             return Parse(reader, std::move(source));
         }
 
@@ -2534,48 +3045,51 @@ namespace brigadier
         If the command passes through a node that is CommandNode::IsFork() then the resulting context will be marked as 'forked'.
         Forked contexts may contain child contexts, which may be modified by the RedirectModifier attached to the fork.
 
-        Parsing a command can never fail, you will always be provided with a new BasicParseResults.
+        Parsing a command can never fail, you will always be provided with a new ParseResults.
         However, that does not mean that it will always parse into a valid command. You should inspect the returned results
-        to check for validity. If its BasicParseResults::GetReader() StringReader::CanRead() then it did not finish
+        to check for validity. If its ParseResults::GetReader() StringReader::CanRead() then it did not finish
         parsing successfully. You can use that position as an indicator to the user where the command stopped being valid.
-        You may inspect BasicParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
+        You may inspect ParseResults::GetExceptions() if you know the parse failed, as it will explain why it could
         not find any valid commands. It may contain multiple exceptions, one for each "potential node" that it could have visited,
         explaining why it did not go down that node.
 
-        When you eventually call Execute(BasicParseResults) with the result of this method, the above error checking
+        When you eventually call Execute(ParseResults) with the result of this method, the above error checking
         will occur. You only need to inspect it yourself if you wish to handle that yourself.
 
         \param command a command string to parse
         \param source a custom "source" object, usually representing the originator of this command
         \return the result of parsing this command
         \see Parse(String, Object)
-        \see Execute(BasicParseResults)
+        \see Execute(ParseResults)
         \see Execute(String, Object)
         */
-        BasicParseResults<S> Parse(StringReader& command, S source)
+        ParseResults<CharT, S> Parse(StringReader<CharT> command, S source)
         {
-            BasicParseResults<S> result(CommandContext<S>(std::move(source), root.get(), command.GetCursor()), command);
+            ParseResults<CharT, S> result(CommandContext<CharT, S>(std::move(source), root.get(), command.GetCursor()), std::move(command));
             ParseNodes(root.get(), result);
             return result;
         }
 
     private:
-        void ParseNodes(CommandNode<S>* node, BasicParseResults<S>& result)
+        void ParseNodes(CommandNode<CharT, S>* node, ParseResults<CharT, S>& result)
         {
             if (!node)
                 return;
 
             S& source = result.context.GetSource();
 
-            std::optional<BasicParseResults<S>> best_potential = {};
-            std::optional<BasicParseResults<S>> current_result_ctx = {}; // delay initialization
+            std::optional<ParseResults<CharT, S>> ctxs[2] = {};
 
-            int cursor = result.reader.GetCursor();
+            bool best = 0;
+
+            size_t cursor = result.reader.GetCursor();
 
             auto [relevant_nodes, relevant_node_count] = node->GetRelevantNodes(result.reader);
 
             for (size_t i = 0; i < relevant_node_count; ++i) {
                 auto& child = relevant_nodes[i];
+                auto& current_result_ctx = ctxs[!best];
+                auto& best_potential = ctxs[best];
 
                 if (!child->CanUse(source)) {
                     continue;
@@ -2588,26 +3102,26 @@ namespace brigadier
                 }
                 else {
                     // create context
-                    current_result_ctx = BasicParseResults<S>(CommandContext<S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
+                    current_result_ctx.emplace(CommandContext<CharT, S>(source, result.GetContext().GetRootNode(), result.GetContext().GetRange()), result.GetReader());
                 }
 
                 auto& current_result = current_result_ctx.value();
 
-                StringReader& reader = current_result.reader;
-                CommandContext<S>& context = current_result.context;
+                StringReader<CharT>& reader = current_result.reader;
+                CommandContext<CharT, S>& context = current_result.context;
 
                 try {
                     try {
                         child->Parse(reader, context);
                     }
-                    catch (std::runtime_error const& ex) {
-                        throw CommandSyntaxException::BuiltInExceptions::DispatcherParseException(reader, ex.what());
+                    catch (RuntimeError<CharT> const& ex) {
+                        throw exceptions::DispatcherParseException(reader, ex.What());
                     }
                     if (reader.CanRead() && reader.Peek() != ARGUMENT_SEPARATOR_CHAR) {
-                        throw CommandSyntaxException::BuiltInExceptions::DispatcherExpectedArgumentSeparator(reader);
+                        throw exceptions::DispatcherExpectedArgumentSeparator(reader);
                     }
                 }
-                catch (CommandSyntaxException ex) {
+                catch (CommandSyntaxException<CharT> const& ex) {
                     result.exceptions.emplace(child.get(), std::move(ex));
                     reader.SetCursor(cursor);
                     continue;
@@ -2618,7 +3132,7 @@ namespace brigadier
                 if (reader.CanRead(child->GetRedirect() == nullptr ? 2 : 1)) {
                     reader.Skip();
                     if (child->GetRedirect() != nullptr) {
-                        BasicParseResults<S> child_result(CommandContext<S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
+                        ParseResults<CharT, S> child_result(CommandContext<CharT, S>(source, child->GetRedirect().get(), reader.GetCursor()), reader);
                         ParseNodes(child->GetRedirect().get(), child_result);
                         result.context.Merge(std::move(context));
                         result.context.WithChildContext(std::move(child_result.context));
@@ -2633,14 +3147,15 @@ namespace brigadier
 
                 if (best_potential.has_value()) {
                     if (current_result.IsBetterThan(*best_potential)) {
-                        best_potential = std::move(current_result_ctx);
+                        best = !best;
                     }
                 }
                 else {
-                    best_potential = std::move(current_result_ctx);
+                    best = !best;
                 }
             }
 
+            auto& best_potential = ctxs[best];
             if (best_potential.has_value()) {
                 result.exceptions.clear();
                 result.reader = std::move(best_potential->reader);
@@ -2668,15 +3183,15 @@ namespace brigadier
         \param restricted if true, commands that the source cannot access will not be mentioned
         \return array of full usage strings under the target node
         */
-        std::vector<std::string> GetAllUsage(CommandNode<S>* node, S source, bool restricted)
+        std::vector<std::basic_string<CharT>> GetAllUsage(CommandNode<CharT, S>* node, S source, bool restricted)
         {
-            std::vector<std::string> result;
+            std::vector<std::basic_string<CharT>> result;
             GetAllUsage(node, std::move(source), result, {}, restricted);
             return result;
         }
 
     private:
-        void GetAllUsage(CommandNode<S>* node, S source, std::vector<std::string>& result, std::string prefix, bool restricted)
+        void GetAllUsage(CommandNode<CharT, S>* node, S source, std::vector<std::basic_string<CharT>>& result, std::basic_string<CharT> prefix, bool restricted)
         {
             if (!node)
                 return;
@@ -2694,17 +3209,17 @@ namespace brigadier
                 prefix = node->GetUsageText();
                 prefix += ARGUMENT_SEPARATOR;
                 if (node->GetRedirect() == root) {
-                    prefix += "...";
+                    prefix += BRIGADIER_LITERAL(CharT, "...");
                 }
                 else {
-                    prefix += "-> ";
+                    prefix += BRIGADIER_LITERAL(CharT, "-> ");
                     prefix += node->GetRedirect()->GetUsageText();
                 }
                 result.emplace_back(std::move(prefix));
             }
             else if (!node->GetChildren().empty()) {
                 for (auto const& [name, child] : node->GetChildren()) {
-                    std::string next_prefix = prefix;
+                    std::basic_string<CharT> next_prefix = prefix;
                     if (!next_prefix.empty()) {
                         next_prefix += ARGUMENT_SEPARATOR;
                     }
@@ -2734,12 +3249,12 @@ namespace brigadier
         \param source a custom "source" object, usually representing the originator of this command
         \return array of full usage strings under the target node
         */
-        std::map<CommandNode<S>*, std::string> GetSmartUsage(CommandNode<S>* node, S source)
+        std::map<CommandNode<CharT, S>*, std::basic_string<CharT>> GetSmartUsage(CommandNode<CharT, S>* node, S source)
         {
-            std::map<CommandNode<S>*, std::string> result;
+            std::map<CommandNode<CharT, S>*, std::basic_string<CharT>> result;
 
             for (auto const& [name, child] : node->GetChildren()) {
-                std::string usage = GetSmartUsage(child.get(), std::move(source), node->GetCommand() != nullptr, false);
+                std::basic_string<CharT> usage = GetSmartUsage(child.get(), std::move(source), node->GetCommand() != nullptr, false);
                 if (!usage.empty()) {
                     result[child.get()] = std::move(usage);
                 }
@@ -2748,7 +3263,7 @@ namespace brigadier
         }
 
     private:
-        std::string GetSmartUsage(CommandNode<S>* node, S source, bool optional, bool deep)
+        std::basic_string<CharT> GetSmartUsage(CommandNode<CharT, S>* node, S source, bool optional, bool deep)
         {
             if (!node)
                 return {};
@@ -2756,7 +3271,7 @@ namespace brigadier
             if (!node->CanUse(source))
                 return {};
 
-            std::string self;
+            std::basic_string<CharT> self;
             if (optional) {
                 self = USAGE_OPTIONAL_OPEN;
                 self += node->GetUsageText();
@@ -2766,30 +3281,30 @@ namespace brigadier
                 self = node->GetUsageText();
             }
             const bool childOptional = node->GetCommand() != nullptr;
-            std::string_view open = childOptional ? USAGE_OPTIONAL_OPEN : USAGE_REQUIRED_OPEN;
-            std::string_view close = childOptional ? USAGE_OPTIONAL_CLOSE : USAGE_REQUIRED_CLOSE;
+            std::basic_string_view<CharT> open = childOptional ? USAGE_OPTIONAL_OPEN : USAGE_REQUIRED_OPEN;
+            std::basic_string_view<CharT> close = childOptional ? USAGE_OPTIONAL_CLOSE : USAGE_REQUIRED_CLOSE;
 
             if (!deep) {
                 if (node->GetRedirect()) {
                     self += ARGUMENT_SEPARATOR;
                     if (node->GetRedirect() == root) {
-                        self += "...";
+                        self += BRIGADIER_LITERAL(CharT, "...");
                     }
                     else {
-                        self += "-> ";
+                        self += BRIGADIER_LITERAL(CharT, "-> ");
                         self += node->GetRedirect()->GetUsageText();
                     }
                     return self;
                 }
                 else {
-                    std::vector<CommandNode<S>*> children;
+                    std::vector<CommandNode<CharT, S>*> children;
                     for (auto const& [name, child] : node->GetChildren()) {
                         if (child->CanUse(source)) {
                             children.push_back(child.get());
                         }
                     }
                     if (children.size() == 1) {
-                        std::string usage = GetSmartUsage(children[0], source, childOptional, childOptional);
+                        std::basic_string<CharT> usage = GetSmartUsage(children[0], source, childOptional, childOptional);
                         if (!usage.empty()) {
                             self += ARGUMENT_SEPARATOR;
                             self += std::move(usage);
@@ -2797,15 +3312,15 @@ namespace brigadier
                         }
                     }
                     else if (children.size() > 1) {
-                        std::set<std::string> childUsage;
+                        std::set<std::basic_string<CharT>> childUsage;
                         for (auto child : children) {
-                            std::string usage = GetSmartUsage(child, source, childOptional, true);
+                            std::basic_string<CharT> usage = GetSmartUsage(child, source, childOptional, true);
                             if (!usage.empty()) {
                                 childUsage.insert(usage);
                             }
                         }
                         if (childUsage.size() == 1) {
-                            std::string usage = *childUsage.begin();
+                            std::basic_string<CharT> usage = *childUsage.begin();
                             self += ARGUMENT_SEPARATOR;
                             if (childOptional) {
                                 self += USAGE_OPTIONAL_OPEN;
@@ -2816,7 +3331,7 @@ namespace brigadier
                             return self;
                         }
                         else if (childUsage.size() > 1) {
-                            std::string builder(open);
+                            std::basic_string<CharT> builder(open);
                             int count = 0;
                             for (auto child : children) {
                                 if (count > 0) {
@@ -2855,7 +3370,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(BasicParseResults<S>& parse, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -2877,24 +3392,24 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions> GetCompletionSuggestions(BasicParseResults<S>& parse, int cursor, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](BasicParseResults<S>* parse, int cursor, bool* cancel) {
+            return std::async(std::launch::async, [](ParseResults<CharT, S> const* parse, size_t cursor, bool* cancel) {
                 auto context = parse->GetContext();
 
-                SuggestionContext<S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
-                CommandNode<S>* parent = nodeBeforeCursor.parent;
-                int start = (std::min)(nodeBeforeCursor.startPos, cursor);
+                SuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
+                CommandNode<CharT, S>* parent = nodeBeforeCursor.parent;
+                size_t start = (std::min)(nodeBeforeCursor.startPos, cursor);
 
-                std::string_view fullInput = parse->GetReader().GetString();
-                std::string_view truncatedInput = fullInput.substr(0, cursor);
-                std::string truncatedInputLowerCase(truncatedInput);
-                std::transform(truncatedInputLowerCase.begin(), truncatedInputLowerCase.end(), truncatedInputLowerCase.begin(), [](char c) { return std::tolower(c); });
+                std::basic_string_view<CharT> fullInput = parse->GetReader().GetString();
+                std::basic_string_view<CharT> truncatedInput = fullInput.substr(0, cursor);
+                std::basic_string<CharT> truncatedInputLowerCase(truncatedInput);
+                std::transform(truncatedInputLowerCase.begin(), truncatedInputLowerCase.end(), truncatedInputLowerCase.begin(), [](CharT c) { return std::tolower(c); });
 
                 context.WithInput(truncatedInput);
 
-                std::vector<std::future<Suggestions>> futures;
-                std::vector<SuggestionsBuilder> builders;
+                std::vector<std::future<Suggestions<CharT>>> futures;
+                std::vector<SuggestionsBuilder<CharT>> builders;
                 size_t max_size = parent->GetChildren().size();
                 futures.reserve(max_size);
                 builders.reserve(max_size);
@@ -2903,16 +3418,16 @@ namespace brigadier
                         builders.emplace_back(truncatedInput, truncatedInputLowerCase, start, cancel);
                         futures.push_back(node->ListSuggestions(context, builders.back()));
                     }
-                    catch (CommandSyntaxException const&) {}
+                    catch (CommandSyntaxException<CharT> const&) {}
                 }
 
-                std::vector<Suggestions> suggestions;
+                std::vector<Suggestions<CharT>> suggestions;
                 for (auto& future : futures)
                 {
                     suggestions.emplace_back(future.get());
                 }
-                return Suggestions::Merge(fullInput, suggestions);
-                }, &parse, cursor, cancel);
+                return Suggestions<CharT>::Merge(fullInput, suggestions);
+            }, &parse, cursor, cancel);
         }
 
         /**
@@ -2929,14 +3444,14 @@ namespace brigadier
         \param target the target node you are finding a path for
         \return a path to the resulting node, or an empty list if it was not found
         */
-        std::vector<std::string> GetPath(CommandNode<S>* target)
+        std::vector<std::basic_string<CharT>> GetPath(CommandNode<CharT, S>* target)
         {
-            std::vector<std::vector<CommandNode<S>*>> nodes;
+            std::vector<std::vector<CommandNode<CharT, S>*>> nodes;
             AddPaths(root.get(), nodes, {});
 
-            for (std::vector<CommandNode<S>*>& list : nodes) {
+            for (std::vector<CommandNode<CharT, S>*>& list : nodes) {
                 if (list.back() == target) {
-                    std::vector<std::string> result;
+                    std::vector<std::basic_string<CharT>> result;
                     result.reserve(list.size());
                     for (auto node : list) {
                         if (node != root.get()) {
@@ -2961,10 +3476,10 @@ namespace brigadier
         \param path a generated path to a node
         \return the node at the given path, or null if not found
         */
-        CommandNode<S>* FindNode(std::vector<std::string> const& path) {
-            CommandNode<S>* node = root.get();
+        CommandNode<CharT, S>* FindNode(std::vector<std::basic_string<CharT>> const& path) {
+            CommandNode<CharT, S>* node = root.get();
             for (auto& name : path) {
-                node = node->GetChild(name);
+                node = node->GetChild(name).get();
                 if (node == nullptr) {
                     return nullptr;
                 }
@@ -2983,13 +3498,13 @@ namespace brigadier
 
         \param consumer a callback to be notified of potential ambiguities
         */
-        void FindAmbiguities(AmbiguityConsumer<S> consumer) {
+        void FindAmbiguities(AmbiguityConsumer<CharT, S> consumer) {
             if (!consumer) return;
             root->FindAmbiguities(consumer);
         }
 
     private:
-        void AddPaths(CommandNode<S>* node, std::vector<std::vector<CommandNode<S>*>>& result, std::vector<CommandNode<S>*> parents) {
+        void AddPaths(CommandNode<CharT, S>* node, std::vector<std::vector<CommandNode<CharT, S>*>>& result, std::vector<CommandNode<CharT, S>*> parents) {
             parents.push_back(node);
             result.push_back(parents);
 
@@ -2999,7 +3514,9 @@ namespace brigadier
         }
 
     private:
-        std::shared_ptr<RootCommandNode<S>> root;
-        ResultConsumer<S> consumer = [](CommandContext<S>& context, bool success, int result) {};
+        std::shared_ptr<RootCommandNode<CharT, S>> root;
+        ResultConsumer<CharT, S> consumer = [](CommandContext<CharT, S>& context, bool success, int result) {};
     };
+    BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandDispatcher);
 }
+#pragma once

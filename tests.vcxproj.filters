@@ -15,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="tests\brigadier_single_header_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="tests\brigadier_header_only_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -155,5 +158,19 @@
     <ClInclude Include="tests\TestAll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\header-only\brigadier\brigadier.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\single-header\brigadier.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\brigadier.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\header-only\brigadier\StringReader.hxx">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
