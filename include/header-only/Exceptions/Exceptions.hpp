@@ -9,7 +9,7 @@ namespace brigadier
     public:
         Exception() {}
         Exception(Exception&&) = default;
-        Exception(Exception const& that) {
+        explicit Exception(Exception const& that) {
             this->message << that.message.str();
         }
     public:
@@ -27,7 +27,12 @@ namespace brigadier
     };
 
     template<typename CharT>
-    class RuntimeError : public Exception<CharT, RuntimeError<CharT>> {};
+    class RuntimeError : public Exception<CharT, RuntimeError<CharT>> {
+    public:
+        RuntimeError() {}
+        RuntimeError(RuntimeError<CharT>&&) = default;
+        explicit RuntimeError(RuntimeError<CharT> const& that) = default;
+    };
     BRIGADIER_SPECIALIZE_BASIC(RuntimeError);
 
     static constexpr size_t default_context_amount = 10;
@@ -39,7 +44,7 @@ namespace brigadier
         CommandSyntaxException(std::nullptr_t) {}
         CommandSyntaxException() {}
         CommandSyntaxException(CommandSyntaxException&&) = default;
-        CommandSyntaxException(CommandSyntaxException const& that) {
+        explicit CommandSyntaxException(CommandSyntaxException<CharT> const& that) {
             this->context = that.context;
         }
         //virtual ~CommandSyntaxException() = default;

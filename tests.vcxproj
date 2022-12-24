@@ -26,11 +26,6 @@
     <ClInclude Include="include\header-only\Arguments\ArgumentRegister.hpp" />
     <ClInclude Include="include\header-only\Arguments\ArgumentType.hpp" />
     <ClInclude Include="include\header-only\brigadier.hpp" />
-    <ClInclude Include="include\header-only\Builder\ArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\Builder\LiteralArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\Builder\MultiArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\Builder\RequiredArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\CommandDispatcher.hpp" />
     <ClInclude Include="include\header-only\Common.hpp" />
     <ClInclude Include="include\header-only\Context\CommandContext.hpp" />
     <ClInclude Include="include\header-only\Context\ParsedArgument.hpp" />
@@ -51,10 +46,6 @@
     <ClInclude Include="include\header-only\Tree\RootCommandNode.hpp" />
     <ClInclude Include="include\single-header\brigadier.hpp" />
     <ClInclude Include="tests\brigadier\Arguments\ArgumentType.hpp" />
-    <ClInclude Include="tests\brigadier\Builder\ArgumentBuilder.hpp" />
-    <ClInclude Include="tests\brigadier\Builder\LiteralArgumentBuilder.hpp" />
-    <ClInclude Include="tests\brigadier\Builder\MultiArgumentBuilder.hpp" />
-    <ClInclude Include="tests\brigadier\Builder\RequiredArgumentBuilder.hpp" />
     <ClInclude Include="tests\brigadier\CommandDispatcher.hpp" />
     <ClInclude Include="tests\brigadier\Context\CommandContext.hpp" />
     <ClInclude Include="tests\brigadier\Context\ParsedArgument.hpp" />

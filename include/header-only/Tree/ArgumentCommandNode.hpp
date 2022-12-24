@@ -8,14 +8,12 @@
 
 namespace brigadier
 {
-    template<typename CharT, typename S, typename T>
-    class RequiredArgumentBuilder;
-
     template<typename CharT, typename S>
     class IArgumentCommandNode : public CommandNode<CharT, S>
     {
     protected:
         IArgumentCommandNode(std::basic_string_view<CharT> name) : name(name) {}
+        explicit IArgumentCommandNode(IArgumentCommandNode<CharT, S>&) = default;
         virtual ~IArgumentCommandNode() = default;
     public:
         virtual std::basic_string<CharT> const& GetName() {
@@ -26,8 +24,14 @@ namespace brigadier
         virtual std::basic_string_view<CharT> GetSortedKey() {
             return name;
         }
+        auto Suggests(SuggestionProvider<CharT, S> provider) -> decltype(*this)
+        {
+            this->customSuggestions = provider;
+            return *this;
+        }
     protected:
         std::basic_string<CharT> name;
+        SuggestionProvider<CharT, S> customSuggestions = nullptr;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(IArgumentCommandNode);
 
@@ -43,6 +47,7 @@ namespace brigadier
             : IArgumentCommandNode<CharT, S>(name)
             , type(std::forward<Args>(args)...)
         {}
+        explicit ArgumentCommandNode(ArgumentCommandNode<CharT, S, T>&) = default;
         virtual ~ArgumentCommandNode() = default;
     public:
         inline SuggestionProvider<CharT, S> const& GetCustomSuggestions() const {
@@ -100,9 +105,7 @@ namespace brigadier
             }
         }
     private:
-        friend class RequiredArgumentBuilder<CharT, S, T>;
         T type;
-        SuggestionProvider<CharT, S> customSuggestions = nullptr;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(ArgumentCommandNode);
 }

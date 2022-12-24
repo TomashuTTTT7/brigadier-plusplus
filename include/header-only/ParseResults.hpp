@@ -6,7 +6,7 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class CommandDispatcher;
+    class RootCommandNode;
 
     template<typename CharT, typename S>
     class ParseResults
@@ -62,7 +62,7 @@ namespace brigadier
         }
     private:
         template<typename, typename>
-        friend class CommandDispatcher;
+        friend class RootCommandNode;
 
         CommandContext<CharT, S> context;
         std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> exceptions;

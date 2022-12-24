@@ -32,4 +32,4 @@ namespace brigadier
     BRIGADIER_SPECIALIZE_BASIC_ALIAS(SuggestionProvider, typename S, S);
 }
 
-#define COMMAND(S, ...) [](auto& ctx) -> int __VA_ARGS__
+#define COMMAND [](auto& ctx) -> int

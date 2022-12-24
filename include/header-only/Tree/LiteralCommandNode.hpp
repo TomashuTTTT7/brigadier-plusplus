@@ -21,6 +21,7 @@ namespace brigadier
         {
             std::transform(literalLowerCase.begin(), literalLowerCase.end(), literalLowerCase.begin(), [](CharT c) { return std::tolower(c); });
         }
+        explicit LiteralCommandNode(LiteralCommandNode<CharT, S>&) = default;
         virtual ~LiteralCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { return literal; }
         virtual std::basic_string<CharT> GetUsageText() { return literal; }

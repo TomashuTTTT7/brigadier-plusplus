@@ -10,7 +10,7 @@
 namespace brigadier
 {
     template<typename CharT, typename S>
-    class CommandDispatcher;
+    class RootCommandNode;
     template<typename CharT, typename S>
     class LiteralCommandNode;
     template<typename CharT, typename S>
@@ -116,7 +116,7 @@ namespace brigadier
 
         void Merge(CommandContext<CharT, S> other);
     private:
-        friend class CommandDispatcher<CharT, S>;
+        friend class RootCommandNode<CharT, S>;
         friend class LiteralCommandNode<CharT, S>;
         friend class CommandNode<CharT, S>;
         template<typename, typename, typename>
