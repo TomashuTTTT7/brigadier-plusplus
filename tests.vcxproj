@@ -23,31 +23,32 @@
     <ClCompile Include="tests\brigadier_single_header_test.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentRegister.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Arguments\ArgumentType.hpp" />
-    <ClInclude Include="include\header-only\brigadier\brigadier.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Builder\ArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Builder\LiteralArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Builder\MultiArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Builder\RequiredArgumentBuilder.hpp" />
-    <ClInclude Include="include\header-only\brigadier\CommandDispatcher.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Common.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Context\CommandContext.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Context\ParsedArgument.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Context\ParsedCommandNode.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Context\StringRange.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Context\SuggestionContext.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Exceptions\Exceptions.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Functional.hpp" />
-    <ClInclude Include="include\header-only\brigadier\ParseResults.hpp" />
-    <ClInclude Include="include\header-only\brigadier\StringReader.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Suggestion\Suggestion.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Suggestion\Suggestions.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Suggestion\SuggestionsBuilder.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Tree\ArgumentCommandNode.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Tree\CommandNode.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Tree\LiteralCommandNode.hpp" />
-    <ClInclude Include="include\header-only\brigadier\Tree\RootCommandNode.hpp" />
+    <ClInclude Include="include\header-only\Arguments\ArgumentRegister.hpp" />
+    <ClInclude Include="include\header-only\Arguments\ArgumentType.hpp" />
+    <ClInclude Include="include\header-only\brigadier.hpp" />
+    <ClInclude Include="include\header-only\Builder\ArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\Builder\LiteralArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\Builder\MultiArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\Builder\RequiredArgumentBuilder.hpp" />
+    <ClInclude Include="include\header-only\CommandDispatcher.hpp" />
+    <ClInclude Include="include\header-only\Common.hpp" />
+    <ClInclude Include="include\header-only\Context\CommandContext.hpp" />
+    <ClInclude Include="include\header-only\Context\ParsedArgument.hpp" />
+    <ClInclude Include="include\header-only\Context\ParsedCommandNode.hpp" />
+    <ClInclude Include="include\header-only\Context\StringRange.hpp" />
+    <ClInclude Include="include\header-only\Context\SuggestionContext.hpp" />
+    <ClInclude Include="include\header-only\Exceptions\Exceptions.hpp" />
+    <ClInclude Include="include\header-only\Functional.hpp" />
+    <ClInclude Include="include\header-only\ParseResults.hpp" />
+    <ClInclude Include="include\header-only\StringReader.hpp" />
+    <ClInclude Include="include\header-only\StringReader.hxx" />
+    <ClInclude Include="include\header-only\Suggestion\Suggestion.hpp" />
+    <ClInclude Include="include\header-only\Suggestion\Suggestions.hpp" />
+    <ClInclude Include="include\header-only\Suggestion\SuggestionsBuilder.hpp" />
+    <ClInclude Include="include\header-only\Tree\ArgumentCommandNode.hpp" />
+    <ClInclude Include="include\header-only\Tree\CommandNode.hpp" />
+    <ClInclude Include="include\header-only\Tree\LiteralCommandNode.hpp" />
+    <ClInclude Include="include\header-only\Tree\RootCommandNode.hpp" />
     <ClInclude Include="include\single-header\brigadier.hpp" />
     <ClInclude Include="tests\brigadier\Arguments\ArgumentType.hpp" />
     <ClInclude Include="tests\brigadier\Builder\ArgumentBuilder.hpp" />
@@ -70,7 +71,6 @@
     <ClInclude Include="tests\brigadier\Tree\RootCommandNode.hpp" />
     <ClInclude Include="tests\CommonTest.hpp" />
     <ClInclude Include="tests\TestAll.h" />
-    <ClInclude Include="utils\brigadier.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="include\header-only\brigadier\StringReader.hxx" />

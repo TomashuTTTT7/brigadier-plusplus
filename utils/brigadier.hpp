@@ -27,8 +27,8 @@ SOFTWARE.
 
 // {{includes}}
 
-#pragma ACME path ../include/header-only/brigadier
-#pragma ACME path ../include/header-only/brigadier/Tree
 #pragma ACME path ../include/header-only
+#pragma ACME path ../include/header-only/Tree
+#pragma ACME path ../include
 
-#include "brigadier/brigadier.hpp"
+#include "header-only/brigadier.hpp"
