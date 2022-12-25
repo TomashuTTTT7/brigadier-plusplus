@@ -45,6 +45,9 @@ namespace brigadier
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
+            catch (...) {
+                Assert::Fail();
+            }
         }
 
         TEST_METHOD(testExecuteImpermissibleCommand) {
@@ -57,6 +60,9 @@ namespace brigadier
             }
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 0);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
@@ -71,6 +77,9 @@ namespace brigadier
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
+            catch (...) {
+                Assert::Fail();
+            }
         }
 
         TEST_METHOD(testExecuteUnknownSubcommand) {
@@ -84,6 +93,9 @@ namespace brigadier
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 4);
             }
+            catch (...) {
+                Assert::Fail();
+            }
         }
 
         TEST_METHOD(testExecuteIncorrectLiteral) {
@@ -96,6 +108,9 @@ namespace brigadier
             }
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 4);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
@@ -112,6 +127,9 @@ namespace brigadier
             }
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 4);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
@@ -240,6 +258,9 @@ namespace brigadier
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 5);
             }
+            catch (...) {
+                Assert::Fail();
+            }
         }
 
         TEST_METHOD(testExecute_invalidOther) {
@@ -261,6 +282,9 @@ namespace brigadier
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 0);
             }
+            catch (...) {
+                Assert::Fail();
+            }
         }
 
         TEST_METHOD(testExecuteInvalidSubcommand) {
@@ -273,6 +297,9 @@ namespace brigadier
             }
             catch (CommandSyntaxExceptionW const& ex) {
                 Assert::AreEqual<size_t>(ex.GetCursor(), 4);
+            }
+            catch (...) {
+                Assert::Fail();
             }
         }
 
@@ -419,7 +446,7 @@ namespace brigadier
                 {get(L"i"), L"i [1|2]"},
                 {get(L"j"), L"j ..."},
                 {get(L"k"), L"k -> h"}
-                });
+            });
         }
 
 
@@ -429,7 +456,7 @@ namespace brigadier
                 {get(L"h 1"), L"[1] i"},
                 {get(L"h 2"), L"[2] i ii"},
                 {get(L"h 3"), L"[3]"}
-                });
+            });
         }
 
 
@@ -442,7 +469,7 @@ namespace brigadier
                 {get(L"h 1"), L"[1] i"},
                 {get(L"h 2"), L"[2] i ii"},
                 {get(L"h 3"), L"[3]"}
-                });
+            });
         }
     };
 
@@ -572,7 +599,6 @@ namespace brigadier
             parent.Then(L"bar");
             parent.Then(L"baz");
             
-
             auto parse = subject.Parse(InputWithOffset(L"junk parent b", 5), source);
             SuggestionsW result = subject.GetCompletionSuggestions(parse).get();
 
@@ -776,17 +802,17 @@ namespace brigadier
             dispatcher.Then(L"command").Executes(command);
             dispatcher.Then(L"redirect").Redirect(dispatcher);
             dispatcher.Then(L"fork").Fork(dispatcher, [](CommandContextW<int>& ctx) -> std::vector<int> { return { 1, 2, 3 }; });
-            simple = dispatcher.Parse(L"command", source);
-            singleRedirect = dispatcher.Parse(L"redirect command", source);
-            forkedRedirect = dispatcher.Parse(L"fork command", source);
+            simple.emplace(dispatcher.Parse(L"command", source));
+            singleRedirect.emplace(dispatcher.Parse(L"redirect command", source));
+            forkedRedirect.emplace(dispatcher.Parse(L"fork command", source));
         }
 
         TEST_METHOD_CLEANUP(cleanup)
         {
             dispatcher = {};
-            simple = {};
-            singleRedirect = {};
-            forkedRedirect = {};
+            simple = std::nullopt;
+            singleRedirect = std::nullopt;
+            forkedRedirect = std::nullopt;
         }
 
         TEST_METHOD(execute_simple) {
@@ -809,15 +835,19 @@ namespace brigadier
     {
         static inline int copies = 0;
         static inline int moves  = 0;
+        static inline int creations = 0;
+        static inline int destructions = 0;
         struct CopyGuard
         {
-            __declspec(noinline) CopyGuard() {}
+            __declspec(noinline) CopyGuard() { ++creations; }
             __declspec(noinline) CopyGuard(CopyGuard const&) { ++copies; }
-            //__declspec(noinline) CopyGuard(CopyGuard&&) { ++moves; }
+            __declspec(noinline) CopyGuard(CopyGuard&&) { ++moves; }
+            __declspec(noinline) CopyGuard& operator=(CopyGuard&&) = default;
+            __declspec(noinline) ~CopyGuard() { ++destructions; }
         };
 
-        TEST_METHOD_INITIALIZE(setup) { copies = 0; moves = 0; }
-        TEST_METHOD_CLEANUP(cleanup)  { copies = 0; moves = 0; }
+        TEST_METHOD_INITIALIZE(setup) { copies = 0; moves = 0; creations = 0; destructions = 0; }
+        TEST_METHOD_CLEANUP(cleanup)  { copies = 0; moves = 0; creations = 0; destructions = 0; }
 
         TEST_METHOD(CopyMoveTest)
         {
@@ -837,7 +867,7 @@ namespace brigadier
 
             dispatcher.Execute(L"foo 1", {});
 
-            Logger::WriteMessage((std::stringstream{} << copies << " copies, " << moves << " moves").str().c_str());
+            Logger::WriteMessage((std::stringstream{} << creations << " creations\n" << copies << " copies\n" << moves << " moves\n" << destructions << " destructions").str().c_str());
         }
     };
 }

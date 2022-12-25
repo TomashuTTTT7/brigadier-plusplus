@@ -24,8 +24,8 @@ namespace brigadier
 
         ParseResults(CommandContext<CharT, S> context) : ParseResults(std::move(context), StringReader<CharT>()) {}
     public:
-        inline CommandContext<CharT, S> const& GetContext() const { return context; }
-        inline StringReader<CharT> const& GetReader()  const { return reader; }
+        inline CommandContext<CharT, S>                                        const& GetContext()    const { return context; }
+        inline StringReader<CharT>                                             const& GetReader()     const { return reader; }
         inline std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
 
         inline bool IsBetterThan(ParseResults<CharT, S> const& other) const

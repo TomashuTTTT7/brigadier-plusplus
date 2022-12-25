@@ -29,6 +29,8 @@ namespace brigadier
     public:
         CommandContext(S source, CommandNode<CharT, S>* root, size_t start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, start)) {}
         CommandContext(S source, CommandNode<CharT, S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, range)) {}
+        CommandContext(CommandContext<CharT, S>&&) = default;
+        explicit CommandContext(CommandContext<CharT, S> const&) = default;
 
         inline CommandContext<CharT, S> GetFor(S source) const;
         inline CommandContext<CharT, S>* GetChild() const;
@@ -78,18 +80,7 @@ namespace brigadier
         inline CommandContext<CharT, S>& WithNode(CommandNode<CharT, S>* node, StringRange range);
         inline CommandContext<CharT, S>& WithChildContext(CommandContext<CharT, S> childContext);
 
-        inline void Reset()
-        {
-            detail::CommandContextInternal<CharT, S>& ctx = *context;
-            input = {};
-            ctx.arguments.clear();
-            ctx.command = nullptr;
-            ctx.nodes.clear();
-            ctx.parent = nullptr;
-            ctx.child = {};
-            ctx.modifier = nullptr;
-            ctx.forks = false;
-        }
+        inline void Reset();
         inline void Reset(S src, CommandNode<CharT, S>* root)
         {
             Reset();
@@ -112,7 +103,7 @@ namespace brigadier
             ctx.range = std::move(range);
         }
     protected:
-        SuggestionContext<CharT, S> FindSuggestionContext(size_t cursor);
+        SuggestionContext<CharT, S> FindSuggestionContext(size_t cursor) const;
 
         void Merge(CommandContext<CharT, S> other);
     private:
@@ -136,6 +127,8 @@ namespace brigadier
         public:
             CommandContextInternal(CommandNode<CharT, S>* root, size_t start) : rootNode(root), range(StringRange::At(start)) {}
             CommandContextInternal(CommandNode<CharT, S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
+            CommandContextInternal(CommandContextInternal<CharT, S>&&) = default;
+            explicit CommandContextInternal(CommandContextInternal<CharT, S> const&) = default;
         protected:
             friend class CommandContext<CharT, S>;
 
@@ -150,6 +143,20 @@ namespace brigadier
             bool forks = false;
         };
         BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContextInternal);
+    }
+
+    template<typename CharT, typename S>
+    void CommandContext<CharT, S>::Reset()
+    {
+        detail::CommandContextInternal<CharT, S>&ctx = *context;
+        input = {};
+        ctx.arguments.clear();
+        ctx.command = nullptr;
+        ctx.nodes.clear();
+        ctx.parent = nullptr;
+        ctx.child = std::nullopt;
+        ctx.modifier = nullptr;
+        ctx.forks = false;
     }
 
     template<typename CharT, typename S>
@@ -206,8 +213,9 @@ namespace brigadier
     template<typename CharT, typename S>
     inline CommandContext<CharT, S> CommandContext<CharT, S>::GetFor(S source) const
     {
-        CommandContext<CharT, S> result = *this;
-        result.source = std::move(source);
+        CommandContext<CharT, S> result = CommandContext<CharT, S>(*this);
+        result.source.~S();
+        ::new (&result.source)S(std::move(source));
         result.input = input;
         return result;
     }
@@ -320,7 +328,10 @@ namespace brigadier
         {
             if (context->child.has_value())
             {
-                context->child->context->parent = nullptr;
+                if (context->child->context)
+                {
+                    context->child->context->parent = nullptr;
+                }
             }
         }
     }
@@ -369,13 +380,13 @@ namespace brigadier
     template<typename CharT, typename S>
     inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithChildContext(CommandContext<CharT, S> childContext)
     {
-        context->child = childContext;
+        context->child.emplace(std::move(childContext));
         context->child->context->parent = this;
         return *this;
     }
 
     template<typename CharT, typename S>
-    SuggestionContext<CharT, S> CommandContext<CharT, S>::FindSuggestionContext(size_t cursor)
+    SuggestionContext<CharT, S> CommandContext<CharT, S>::FindSuggestionContext(size_t cursor) const
     {
         auto& ctx = context;
         if (ctx->range.GetStart() <= cursor) {
@@ -416,7 +427,8 @@ namespace brigadier
         for (auto& arg : ctx->arguments)
             context->arguments.emplace(std::move(arg));
         context->command = std::move(ctx->command);
-        source = std::move(other.source);
+        source.~S();
+        ::new (&source)S(std::move(other.source));
         context->nodes.reserve(context->nodes.size() + ctx->nodes.size());
         for (auto& node : ctx->nodes)
         {
@@ -429,11 +441,11 @@ namespace brigadier
         if (ctx->child.has_value())
         {
             ctx->child->context->parent = this;
-            if (context->child.has_value())
-            {
+            if (context->child.has_value()) {
                 context->child->Merge(std::move(*ctx->child));
             }
-            else context->child = std::move(ctx->child);
+            context->child.emplace(std::move(*ctx->child));
+            ctx->child.reset();
         }
     }
 }

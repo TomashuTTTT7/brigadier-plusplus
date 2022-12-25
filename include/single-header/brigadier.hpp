@@ -701,9 +701,9 @@ namespace brigadier
         Suggestions(StringRange range, std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
         Suggestions() : Suggestions<CharT>(StringRange::At(0), {}) {}
 
-        inline StringRange GetRange() const { return range; }
-        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
-        inline bool IsEmpty() { return suggestions.empty(); }
+        inline StringRange                                              GetRange() const { return range; }
+        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList()  const { return suggestions; }
+        inline bool                                                     IsEmpty()  const { return suggestions.empty(); }
 
         static inline std::future<Suggestions<CharT>> Empty()
         {
@@ -763,7 +763,7 @@ namespace brigadier
     public:
         SuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, size_t start, bool* cancel = nullptr) : start(start), input(input), inputLowerCase(inputLowerCase), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
 
-        inline int GetStart() const { return start; }
+        inline size_t GetStart() const { return start; }
         inline std::basic_string_view<CharT> GetInput() const { return input; }
         inline std::basic_string_view<CharT> GetInputLowerCase() const { return inputLowerCase; }
         inline std::basic_string_view<CharT> GetRemaining() const { return remaining; }
@@ -1381,8 +1381,8 @@ namespace brigadier
         IParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
         virtual ~IParsedArgument() = default;
 
-        inline StringRange GetRange()    const { return range; }
-        inline TypeInfo                GetTypeInfo() const { return typeInfo; }
+        inline StringRange GetRange() const { return range; }
+        inline TypeInfo GetTypeInfo() const { return typeInfo; }
     protected:
         StringRange range;
         TypeInfo typeInfo;
@@ -1416,7 +1416,7 @@ namespace brigadier
         ParsedCommandNode(CommandNode<CharT, S>* node, StringRange range) : node(node), range(std::move(range)) {}
 
         inline CommandNode<CharT, S>* GetNode()  const { return node;  }
-        inline StringRange     GetRange() const { return range; }
+        inline StringRange            GetRange() const { return range; }
     private:
         CommandNode<CharT, S>* node;
         StringRange range;
@@ -1462,6 +1462,8 @@ namespace brigadier
     public:
         CommandContext(S source, CommandNode<CharT, S>* root, size_t start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, start)) {}
         CommandContext(S source, CommandNode<CharT, S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, range)) {}
+        CommandContext(CommandContext<CharT, S>&&) = default;
+        explicit CommandContext(CommandContext<CharT, S> const&) = default;
 
         inline CommandContext<CharT, S> GetFor(S source) const;
         inline CommandContext<CharT, S>* GetChild() const;
@@ -1511,18 +1513,7 @@ namespace brigadier
         inline CommandContext<CharT, S>& WithNode(CommandNode<CharT, S>* node, StringRange range);
         inline CommandContext<CharT, S>& WithChildContext(CommandContext<CharT, S> childContext);
 
-        inline void Reset()
-        {
-            detail::CommandContextInternal<CharT, S>& ctx = *context;
-            input = {};
-            ctx.arguments.clear();
-            ctx.command = nullptr;
-            ctx.nodes.clear();
-            ctx.parent = nullptr;
-            ctx.child = {};
-            ctx.modifier = nullptr;
-            ctx.forks = false;
-        }
+        inline void Reset();
         inline void Reset(S src, CommandNode<CharT, S>* root)
         {
             Reset();
@@ -1545,7 +1536,7 @@ namespace brigadier
             ctx.range = std::move(range);
         }
     protected:
-        SuggestionContext<CharT, S> FindSuggestionContext(size_t cursor);
+        SuggestionContext<CharT, S> FindSuggestionContext(size_t cursor) const;
 
         void Merge(CommandContext<CharT, S> other);
     private:
@@ -1569,6 +1560,8 @@ namespace brigadier
         public:
             CommandContextInternal(CommandNode<CharT, S>* root, size_t start) : rootNode(root), range(StringRange::At(start)) {}
             CommandContextInternal(CommandNode<CharT, S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
+            CommandContextInternal(CommandContextInternal<CharT, S>&&) = default;
+            explicit CommandContextInternal(CommandContextInternal<CharT, S> const&) = default;
         protected:
             friend class CommandContext<CharT, S>;
 
@@ -1583,6 +1576,20 @@ namespace brigadier
             bool forks = false;
         };
         BRIGADIER_SPECIALIZE_BASIC_TEMPL(CommandContextInternal);
+    }
+
+    template<typename CharT, typename S>
+    void CommandContext<CharT, S>::Reset()
+    {
+        detail::CommandContextInternal<CharT, S>&ctx = *context;
+        input = {};
+        ctx.arguments.clear();
+        ctx.command = nullptr;
+        ctx.nodes.clear();
+        ctx.parent = nullptr;
+        ctx.child = std::nullopt;
+        ctx.modifier = nullptr;
+        ctx.forks = false;
     }
 
     template<typename CharT, typename S>
@@ -1639,8 +1646,9 @@ namespace brigadier
     template<typename CharT, typename S>
     inline CommandContext<CharT, S> CommandContext<CharT, S>::GetFor(S source) const
     {
-        CommandContext<CharT, S> result = *this;
-        result.source = std::move(source);
+        CommandContext<CharT, S> result = CommandContext<CharT, S>(*this);
+        result.source.~S();
+        ::new (&result.source)S(std::move(source));
         result.input = input;
         return result;
     }
@@ -1752,7 +1760,10 @@ namespace brigadier
         {
             if (context->child.has_value())
             {
-                context->child->context->parent = nullptr;
+                if (context->child->context)
+                {
+                    context->child->context->parent = nullptr;
+                }
             }
         }
     }
@@ -1801,13 +1812,13 @@ namespace brigadier
     template<typename CharT, typename S>
     inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithChildContext(CommandContext<CharT, S> childContext)
     {
-        context->child = childContext;
+        context->child.emplace(std::move(childContext));
         context->child->context->parent = this;
         return *this;
     }
 
     template<typename CharT, typename S>
-    SuggestionContext<CharT, S> CommandContext<CharT, S>::FindSuggestionContext(size_t cursor)
+    SuggestionContext<CharT, S> CommandContext<CharT, S>::FindSuggestionContext(size_t cursor) const
     {
         auto& ctx = context;
         if (ctx->range.GetStart() <= cursor) {
@@ -1848,7 +1859,8 @@ namespace brigadier
         for (auto& arg : ctx->arguments)
             context->arguments.emplace(std::move(arg));
         context->command = std::move(ctx->command);
-        source = std::move(other.source);
+        source.~S();
+        ::new (&source)S(std::move(other.source));
         context->nodes.reserve(context->nodes.size() + ctx->nodes.size());
         for (auto& node : ctx->nodes)
         {
@@ -1861,11 +1873,11 @@ namespace brigadier
         if (ctx->child.has_value())
         {
             ctx->child->context->parent = this;
-            if (context->child.has_value())
-            {
+            if (context->child.has_value()) {
                 context->child->Merge(std::move(*ctx->child));
             }
-            else context->child = std::move(ctx->child);
+            context->child.emplace(std::move(*ctx->child));
+            ctx->child.reset();
         }
     }
 }
@@ -2350,8 +2362,8 @@ namespace brigadier
 
         ParseResults(CommandContext<CharT, S> context) : ParseResults(std::move(context), StringReader<CharT>()) {}
     public:
-        inline CommandContext<CharT, S> const& GetContext() const { return context; }
-        inline StringReader<CharT> const& GetReader()  const { return reader; }
+        inline CommandContext<CharT, S>                                        const& GetContext()    const { return context; }
+        inline StringReader<CharT>                                             const& GetReader()     const { return reader; }
         inline std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
 
         inline bool IsBetterThan(ParseResults<CharT, S> const& other) const
@@ -2453,7 +2465,7 @@ namespace brigadier
     class RootCommandNode : public CommandNode<CharT, S>
     {
     public:
-        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
+        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](CommandContext<CharT, S>& s)->std::vector<S> { return { s.GetSource() }; }, false) {}
 
         virtual ~RootCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }
@@ -2610,9 +2622,9 @@ namespace brigadier
             bool forked = false;
             bool foundCommand = false;
             auto command = parse.GetReader().GetString();
-            auto original = parse.GetContext();
+            auto original = CommandContext<CharT, S>(parse.GetContext());
             original.WithInput(command);
-            std::vector<CommandContext<CharT, S>> contexts = { original };
+            std::vector<CommandContext<CharT, S>> contexts = { CommandContext<CharT, S>(original) };
             std::vector<CommandContext<CharT, S>> next;
 
             while (!contexts.empty()) {
@@ -3039,7 +3051,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -3061,11 +3073,11 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, size_t cursor, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<CharT, S> const* parse, size_t cursor, bool* cancel)
+            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, size_t cursor, bool* cancel)
             {
-                auto context = parse->GetContext();
+                auto context = CommandContext<CharT, S>(parse->GetContext());
 
                 SuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
                 CommandNode<CharT, S>* parent = nodeBeforeCursor.parent;

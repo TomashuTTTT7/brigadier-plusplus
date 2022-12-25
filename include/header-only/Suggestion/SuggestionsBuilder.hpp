@@ -10,7 +10,7 @@ namespace brigadier
     public:
         SuggestionsBuilder(std::basic_string_view<CharT> input, std::basic_string_view<CharT> inputLowerCase, size_t start, bool* cancel = nullptr) : start(start), input(input), inputLowerCase(inputLowerCase), remaining(input.substr(start)), remainingLowerCase(inputLowerCase.substr(start)), cancel(cancel) {}
 
-        inline int GetStart() const { return start; }
+        inline size_t GetStart() const { return start; }
         inline std::basic_string_view<CharT> GetInput() const { return input; }
         inline std::basic_string_view<CharT> GetInputLowerCase() const { return inputLowerCase; }
         inline std::basic_string_view<CharT> GetRemaining() const { return remaining; }

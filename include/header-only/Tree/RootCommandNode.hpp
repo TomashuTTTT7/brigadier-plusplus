@@ -60,7 +60,7 @@ namespace brigadier
     class RootCommandNode : public CommandNode<CharT, S>
     {
     public:
-        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](auto s)->std::vector<S> { return { s.GetSource() }; }, false) {}
+        RootCommandNode() : CommandNode<CharT, S>(nullptr, [](S&) { return true; }, nullptr, [](CommandContext<CharT, S>& s)->std::vector<S> { return { s.GetSource() }; }, false) {}
 
         virtual ~RootCommandNode() = default;
         virtual std::basic_string<CharT> const& GetName() { static const std::basic_string<CharT> blank; return blank; }
@@ -217,9 +217,9 @@ namespace brigadier
             bool forked = false;
             bool foundCommand = false;
             auto command = parse.GetReader().GetString();
-            auto original = parse.GetContext();
+            auto original = CommandContext<CharT, S>(parse.GetContext());
             original.WithInput(command);
-            std::vector<CommandContext<CharT, S>> contexts = { original };
+            std::vector<CommandContext<CharT, S>> contexts = { CommandContext<CharT, S>(original) };
             std::vector<CommandContext<CharT, S>> next;
 
             while (!contexts.empty()) {
@@ -646,7 +646,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -668,11 +668,11 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, size_t cursor, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<CharT, S> const* parse, size_t cursor, bool* cancel)
+            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, size_t cursor, bool* cancel)
             {
-                auto context = parse->GetContext();
+                auto context = CommandContext<CharT, S>(parse->GetContext());
 
                 SuggestionContext<CharT, S> nodeBeforeCursor = context.FindSuggestionContext(cursor);
                 CommandNode<CharT, S>* parent = nodeBeforeCursor.parent;

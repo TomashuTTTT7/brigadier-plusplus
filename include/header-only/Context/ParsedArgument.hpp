@@ -25,8 +25,8 @@ namespace brigadier
         IParsedArgument(size_t start, size_t end, TypeInfo typeInfo) : range(start, end), typeInfo(typeInfo) {}
         virtual ~IParsedArgument() = default;
 
-        inline StringRange GetRange()    const { return range; }
-        inline TypeInfo                GetTypeInfo() const { return typeInfo; }
+        inline StringRange GetRange() const { return range; }
+        inline TypeInfo GetTypeInfo() const { return typeInfo; }
     protected:
         StringRange range;
         TypeInfo typeInfo;

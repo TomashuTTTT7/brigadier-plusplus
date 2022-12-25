@@ -17,9 +17,9 @@ namespace brigadier
         Suggestions(StringRange range, std::set<Suggestion<CharT>, CompareNoCase<CharT>> suggestions) : range(std::move(range)), suggestions(std::move(suggestions)) {}
         Suggestions() : Suggestions<CharT>(StringRange::At(0), {}) {}
 
-        inline StringRange GetRange() const { return range; }
-        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList() const { return suggestions; }
-        inline bool IsEmpty() { return suggestions.empty(); }
+        inline StringRange                                              GetRange() const { return range; }
+        inline std::set<Suggestion<CharT>, CompareNoCase<CharT>> const& GetList()  const { return suggestions; }
+        inline bool                                                     IsEmpty()  const { return suggestions.empty(); }
 
         static inline std::future<Suggestions<CharT>> Empty()
         {
