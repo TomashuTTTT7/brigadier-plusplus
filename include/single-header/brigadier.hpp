@@ -915,7 +915,7 @@ namespace brigadier
     using AmbiguityConsumer = void(*)(CommandNode<CharT, S>* parent, CommandNode<CharT, S>* child, CommandNode<CharT, S>* sibling, std::set<std::basic_string_view<CharT>>& inputs);
     BRIGADIER_SPECIALIZE_BASIC_ALIAS(AmbiguityConsumer, typename S, S);
     template<typename CharT, typename S>
-    using Command = int(*)(CommandContext<CharT, S>& context);
+    using Command = int(*)(CommandContext<CharT, S> const& context);
     BRIGADIER_SPECIALIZE_BASIC_ALIAS(Command, typename S, S);
     template<typename CharT, typename S>
     using RedirectModifier = std::vector<S>(*)(CommandContext<CharT, S>& context);
@@ -1485,22 +1485,22 @@ namespace brigadier
         inline bool IsForked() const;
 
         template<typename ArgType>
-        typename ArgType::type GetArgument(std::basic_string_view<CharT> name);
+        typename ArgType::type GetArgument(std::basic_string_view<CharT> name) const;
         template<typename ArgType>
-        std::optional<typename ArgType::type> GetArgumentOpt(std::basic_string_view<CharT> name);
+        std::optional<typename ArgType::type> GetArgumentOpt(std::basic_string_view<CharT> name) const;
         template<typename ArgType>
-        typename ArgType::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value);
+        typename ArgType::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value) const;
         
         template<template<typename> typename ArgType>
-        inline typename ArgType<CharT>::type GetArgument(std::basic_string_view<CharT> name) {
+        inline typename ArgType<CharT>::type GetArgument(std::basic_string_view<CharT> name) const {
             return GetArgument<ArgType<CharT>>(name);
         }
         template<template<typename> typename ArgType>
-        inline std::optional<typename ArgType<CharT>::type> GetArgumentOpt(std::basic_string_view<CharT> name) {
+        inline std::optional<typename ArgType<CharT>::type> GetArgumentOpt(std::basic_string_view<CharT> name) const {
             return GetArgumentOpt<ArgType<CharT>>(name);
         }
         template<template<typename> typename ArgType>
-        inline typename ArgType<CharT>::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value) {
+        inline typename ArgType<CharT>::type GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType<CharT>::type default_value) const {
             return GetArgumentOr<ArgType<CharT>>(name, std::move(default_value));
         }
 
@@ -1594,7 +1594,7 @@ namespace brigadier
 
     template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name)
+    typename ArgType::type CommandContext<CharT, S>::GetArgument(std::basic_string_view<CharT> name) const
     {
         auto argument = context->arguments.find(name);
 
@@ -1611,7 +1611,7 @@ namespace brigadier
 
     template<typename CharT, typename S>
     template<typename ArgType>
-    std::optional<typename ArgType::type> CommandContext<CharT, S>::GetArgumentOpt(std::basic_string_view<CharT> name)
+    std::optional<typename ArgType::type> CommandContext<CharT, S>::GetArgumentOpt(std::basic_string_view<CharT> name) const
     {
         auto argument = context->arguments.find(name);
 
@@ -1628,7 +1628,7 @@ namespace brigadier
 
     template<typename CharT, typename S>
     template<typename ArgType>
-    typename ArgType::type CommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value)
+    typename ArgType::type CommandContext<CharT, S>::GetArgumentOr(std::basic_string_view<CharT> name, typename ArgType::type default_value) const
     {
         auto argument = context->arguments.find(name);
 

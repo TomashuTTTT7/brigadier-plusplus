@@ -3,9 +3,9 @@
 
 namespace brigadier
 {
-    CommandW<int> command = [](CommandContextW<int>& ctx) -> int { return 42; };
-    CommandW<int> subcommand = [](CommandContextW<int>& ctx) -> int { return 100; };
-    CommandW<int> wrongcommand = [](CommandContextW<int>& ctx) -> int { Assert::Fail(); return 0; };
+    CommandW<int> command = [](CommandContextW<int> const& ctx) -> int { return 42; };
+    CommandW<int> subcommand = [](CommandContextW<int> const& ctx) -> int { return 100; };
+    CommandW<int> wrongcommand = [](CommandContextW<int> const& ctx) -> int { Assert::Fail(); return 0; };
     int source = 0;
 
     TEST_CLASS(CommandDispatcherTest)
@@ -856,11 +856,11 @@ namespace brigadier
             RootCommandNodeW<Src> dispatcher;
 
             auto& foo = dispatcher.Then(L"foo");
-            foo.Then<Integer>(L"bar").Executes([](CommandContextW<Src>& ctx) {
+            foo.Then<Integer>(L"bar").Executes([](CommandContextW<Src> const& ctx) {
                 printf("Bar is %d\n", ctx.GetArgument<Integer>(L"bar"));
                 return 1;
             });
-            foo.Executes([](CommandContextW<Src>& ctx) {
+            foo.Executes([](CommandContextW<Src> const& ctx) {
                 puts("Called foo without arguments");
                 return 1;
             });

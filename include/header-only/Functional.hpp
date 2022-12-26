@@ -16,7 +16,7 @@ namespace brigadier
     using AmbiguityConsumer = void(*)(CommandNode<CharT, S>* parent, CommandNode<CharT, S>* child, CommandNode<CharT, S>* sibling, std::set<std::basic_string_view<CharT>>& inputs);
     BRIGADIER_SPECIALIZE_BASIC_ALIAS(AmbiguityConsumer, typename S, S);
     template<typename CharT, typename S>
-    using Command = int(*)(CommandContext<CharT, S>& context);
+    using Command = int(*)(CommandContext<CharT, S> const& context);
     BRIGADIER_SPECIALIZE_BASIC_ALIAS(Command, typename S, S);
     template<typename CharT, typename S>
     using RedirectModifier = std::vector<S>(*)(CommandContext<CharT, S>& context);
