@@ -56,13 +56,13 @@ namespace brigadier
         void DescribeContext(size_t context_amount) {
             if (!context.GetString().empty()) {
                 size_t cursor = context->GetCursor();
-                message << BRIGADIER_LITERAL(CharT, " at position ");
-                message << cursor;
-                message << BRIGADIER_LITERAL(CharT, ": ");
+                this->message << BRIGADIER_LITERAL(CharT, " at position ");
+                this->message << cursor;
+                this->message << BRIGADIER_LITERAL(CharT, ": ");
                 if (cursor > context_amount)
-                    message << BRIGADIER_LITERAL(CharT, "...");
-                message << context.GetString().substr(cursor > context_amount ? cursor - context_amount : 0, context_amount);
-                message << BRIGADIER_LITERAL(CharT, "<--[HERE]");
+                    this->message << BRIGADIER_LITERAL(CharT, "...");
+                this->message << context.GetString().substr(cursor > context_amount ? cursor - context_amount : 0, context_amount);
+                this->message << BRIGADIER_LITERAL(CharT, "<--[HERE]");
             }
         }
         //virtual void DescribeException() {}

@@ -51,7 +51,7 @@ namespace brigadier
         virtual ~ArgumentCommandNode() = default;
     public:
         inline SuggestionProvider<CharT, S> const& GetCustomSuggestions() const {
-            return customSuggestions;
+            return this->customSuggestions;
         }
 
         inline T const& GetType() {

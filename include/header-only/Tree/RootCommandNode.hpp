@@ -646,7 +646,7 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, bool* cancel = nullptr)
         {
             return GetCompletionSuggestions(parse, parse.GetReader().GetTotalLength(), cancel);
         }
@@ -668,9 +668,9 @@ namespace brigadier
         \param cancel a pointer to a bool that can cancel future when set to true. Result will be empty in such a case.
         \return a future that will eventually resolve into a Suggestions object
         */
-        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S>& parse, size_t cursor, bool* cancel = nullptr)
+        std::future<Suggestions<CharT>> GetCompletionSuggestions(ParseResults<CharT, S> const& parse, size_t cursor, bool* cancel = nullptr)
         {
-            return std::async(std::launch::async, [](ParseResults<CharT, S>* parse, size_t cursor, bool* cancel)
+            return std::async(std::launch::async, [](ParseResults<CharT, S> const* parse, size_t cursor, bool* cancel)
             {
                 auto context = CommandContext<CharT, S>(parse->GetContext());
 
@@ -724,14 +724,14 @@ namespace brigadier
         std::vector<std::basic_string<CharT>> GetPath(CommandNode<CharT, S>* target)
         {
             std::vector<std::vector<CommandNode<CharT, S>*>> nodes;
-            AddPaths(root.get(), nodes, {});
+            AddPaths(this->root.get(), nodes, {});
 
             for (std::vector<CommandNode<CharT, S>*>& list : nodes) {
                 if (list.back() == target) {
                     std::vector<std::basic_string<CharT>> result;
                     result.reserve(list.size());
                     for (auto node : list) {
-                        if (node != root.get()) {
+                        if (node != this->root.get()) {
                             result.push_back(node->GetName());
                         }
                     }
