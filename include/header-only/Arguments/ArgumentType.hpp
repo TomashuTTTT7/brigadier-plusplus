@@ -238,7 +238,7 @@ namespace brigadier
     {
         static_assert(std::is_arithmetic_v<T>, "T must be a number");
     public:
-        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = std::numeric_limits<T>::max()) : minimum(minimum), maximum(maximum) {}
+        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = (std::numeric_limits<T>::max)()) : minimum(minimum), maximum(maximum) {}
 
         T GetMinimum() {
             return minimum;

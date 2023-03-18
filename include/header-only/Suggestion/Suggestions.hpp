@@ -45,8 +45,8 @@ namespace brigadier
         {
             Suggestions<CharT> ret;
             if (suggestions.empty()) return ret;
-            size_t start = std::numeric_limits<size_t>::max();
-            size_t end = std::numeric_limits<size_t>::min();
+            size_t start = (std::numeric_limits<size_t>::max)();
+            size_t end = (std::numeric_limits<size_t>::min)();
             for (auto& suggestion : suggestions) {
                 if (cancel && *cancel) return ret;
                 start = (std::min)(suggestion.GetRange().GetStart(), start);

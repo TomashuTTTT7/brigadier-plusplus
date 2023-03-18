@@ -1,5 +1,12 @@
 #pragma once
 
+// Test compatibility with Windows.h header
+#ifdef __has_include
+#if __has_include(<Windows.h>)
+#include <Windows.h>
+#endif
+#endif
+
 // Tests
 #include "brigadier/StringReader.hpp"
 #include "brigadier/CommandDispatcher.hpp"

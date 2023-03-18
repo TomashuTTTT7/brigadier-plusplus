@@ -729,8 +729,8 @@ namespace brigadier
         {
             Suggestions<CharT> ret;
             if (suggestions.empty()) return ret;
-            size_t start = std::numeric_limits<size_t>::max();
-            size_t end = std::numeric_limits<size_t>::min();
+            size_t start = (std::numeric_limits<size_t>::max)();
+            size_t end = (std::numeric_limits<size_t>::min)();
             for (auto& suggestion : suggestions) {
                 if (cancel && *cancel) return ret;
                 start = (std::min)(suggestion.GetRange().GetStart(), start);
@@ -2112,7 +2112,7 @@ namespace brigadier
     {
         static_assert(std::is_arithmetic_v<T>, "T must be a number");
     public:
-        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = std::numeric_limits<T>::max()) : minimum(minimum), maximum(maximum) {}
+        ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = (std::numeric_limits<T>::max)()) : minimum(minimum), maximum(maximum) {}
 
         T GetMinimum() {
             return minimum;
