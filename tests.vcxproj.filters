@@ -26,18 +26,6 @@
     <ClInclude Include="tests\brigadier\Arguments\ArgumentType.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tests\brigadier\Builder\ArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tests\brigadier\Builder\LiteralArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tests\brigadier\Builder\MultiArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tests\brigadier\Builder\RequiredArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tests\brigadier\CommandDispatcher.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -95,18 +83,6 @@
     <ClInclude Include="include\header-only\Arguments\ArgumentType.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\header-only\Builder\ArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\header-only\Builder\LiteralArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\header-only\Builder\MultiArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\header-only\Builder\RequiredArgumentBuilder.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\header-only\Context\CommandContext.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -147,9 +123,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\header-only\brigadier.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\header-only\CommandDispatcher.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\header-only\Common.hpp">
