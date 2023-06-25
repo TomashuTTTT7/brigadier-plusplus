@@ -9,12 +9,12 @@ namespace brigadier
     class ParsedCommandNode
     {
     public:
-        ParsedCommandNode(CommandNode<CharT, S>* node, StringRange range) : node(node), range(std::move(range)) {}
+        ParsedCommandNode(CommandNode<CharT, S> const* node, StringRange range) : node(node), range(std::move(range)) {}
 
-        inline CommandNode<CharT, S>* GetNode()  const { return node;  }
-        inline StringRange            GetRange() const { return range; }
+        inline CommandNode<CharT, S> const* GetNode()  const { return node;  }
+        inline StringRange                  GetRange() const { return range; }
     private:
-        CommandNode<CharT, S>* node;
+        CommandNode<CharT, S> const* node;
         StringRange range;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParsedCommandNode);

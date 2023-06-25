@@ -8,9 +8,9 @@ namespace brigadier
     class SuggestionContext
     {
     public:
-        SuggestionContext(CommandNode<CharT, S>* parent, size_t startPos) : parent(parent), startPos(startPos) {}
+        SuggestionContext(CommandNode<CharT, S> const* parent, size_t startPos) : parent(parent), startPos(startPos) {}
 
-        CommandNode<CharT, S>* parent;
+        CommandNode<CharT, S> const* parent;
         size_t startPos;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(SuggestionContext);

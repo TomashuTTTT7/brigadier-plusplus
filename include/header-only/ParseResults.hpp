@@ -12,7 +12,7 @@ namespace brigadier
     class ParseResults
     {
     public:
-        ParseResults(CommandContext<CharT, S> context, StringReader<CharT> reader, std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> exceptions)
+        ParseResults(CommandContext<CharT, S> context, StringReader<CharT> reader, std::map<CommandNode<CharT, S> const*, CommandSyntaxException<CharT>> exceptions)
             : context(std::move(context))
             , reader(std::move(reader))
             , exceptions(std::move(exceptions))
@@ -24,9 +24,9 @@ namespace brigadier
 
         ParseResults(CommandContext<CharT, S> context) : ParseResults(std::move(context), StringReader<CharT>()) {}
     public:
-        inline CommandContext<CharT, S>                                        const& GetContext()    const { return context; }
-        inline StringReader<CharT>                                             const& GetReader()     const { return reader; }
-        inline std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
+        inline CommandContext<CharT, S>                                              const& GetContext()    const { return context; }
+        inline StringReader<CharT>                                                   const& GetReader()     const { return reader; }
+        inline std::map<CommandNode<CharT, S> const*, CommandSyntaxException<CharT>> const& GetExceptions() const { return exceptions; }
 
         inline bool IsBetterThan(ParseResults<CharT, S> const& other) const
         {
@@ -50,12 +50,12 @@ namespace brigadier
             exceptions.clear();
             reader = std::move(new_reader);
         }
-        inline void Reset(S source, CommandNode<CharT, S>* root, size_t start, StringReader<CharT> reader = {})
+        inline void Reset(S source, CommandNode<CharT, S> const* root, size_t start, StringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, start);
         }
-        inline void Reset(S source, CommandNode<CharT, S>* root, StringRange range, StringReader<CharT> reader = {})
+        inline void Reset(S source, CommandNode<CharT, S> const* root, StringRange range, StringReader<CharT> reader = {})
         {
             Reset(std::move(reader));
             context.Reset(std::move(source), root, std::move(range));
@@ -65,7 +65,7 @@ namespace brigadier
         friend class RootCommandNode;
 
         CommandContext<CharT, S> context;
-        std::map<CommandNode<CharT, S>*, CommandSyntaxException<CharT>> exceptions;
+        std::map<CommandNode<CharT, S> const*, CommandSyntaxException<CharT>> exceptions;
         StringReader<CharT> reader;
     };
     BRIGADIER_SPECIALIZE_BASIC_TEMPL(ParseResults);

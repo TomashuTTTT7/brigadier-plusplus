@@ -16,12 +16,12 @@ namespace brigadier
         explicit IArgumentCommandNode(IArgumentCommandNode<CharT, S>&) = default;
         virtual ~IArgumentCommandNode() = default;
     public:
-        virtual std::basic_string<CharT> const& GetName() {
+        virtual std::basic_string<CharT> const& GetName() const {
             return name;
         }
-        virtual CommandNodeType GetNodeType() { return CommandNodeType::ArgumentCommandNode; }
+        virtual CommandNodeType GetNodeType() const { return CommandNodeType::ArgumentCommandNode; }
     protected:
-        virtual std::basic_string_view<CharT> GetSortedKey() {
+        virtual std::basic_string_view<CharT> GetSortedKey() const {
             return name;
         }
         auto Suggests(SuggestionProvider<CharT, S> provider) -> decltype(*this)
@@ -54,11 +54,11 @@ namespace brigadier
             return this->customSuggestions;
         }
 
-        inline T const& GetType() {
+        inline T const& GetType() const {
             return type;
         }
     public:
-        virtual std::basic_string<CharT> GetUsageText() {
+        virtual std::basic_string<CharT> GetUsageText() const {
             std::basic_string<CharT> ret;
             constexpr auto typeName = T::template GetTypeName<CharT>();
             ret.reserve(this->name.size() + USAGE_ARGUMENT_OPEN.size() + USAGE_ARGUMENT_CLOSE.size() + typeName.size() > 0 ? typeName.size() + 2 : 0);
@@ -72,10 +72,10 @@ namespace brigadier
             ret += USAGE_ARGUMENT_CLOSE;
             return ret;
         }
-        virtual std::vector<std::basic_string_view<CharT>> GetExamples() {
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() const {
             return type.template GetExamples<CharT>();
         }
-        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) {
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) const {
             size_t start = reader.GetCursor();
             using Type = typename T::type;
             Type result = type.Parse(reader);
@@ -84,17 +84,17 @@ namespace brigadier
             contextBuilder.WithArgument(this->name, parsed);
             contextBuilder.WithNode(this, parsed->GetRange());
         }
-        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const
         {
             if (this->customSuggestions == nullptr) {
-                return type.template ListSuggestions<CharT, S>(context, builder);
+                return this->type.template ListSuggestions<CharT, S>(context, builder);
             }
             else {
                 return this->customSuggestions(context, builder);
             }
         }
     protected:
-        virtual bool IsValidInput(std::basic_string_view<CharT> input) {
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) const {
             try {
                 StringReader<CharT> reader = StringReader<CharT>(input);
                 type.Parse(reader);

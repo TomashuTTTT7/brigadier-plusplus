@@ -379,11 +379,11 @@ namespace brigadier
             subject = {};
         }
 
-        CommandNodeW<int>* get(std::wstring_view command) {
+        CommandNodeW<int> const* get(std::wstring_view command) {
             return subject.Parse(command, source).GetContext().GetNodes().back().GetNode();
         }
 
-        CommandNodeW<int>* get(StringReaderW command) {
+        CommandNodeW<int> const* get(StringReaderW command) {
             return subject.Parse(command, source).GetContext().GetNodes().back().GetNode();
         }
 

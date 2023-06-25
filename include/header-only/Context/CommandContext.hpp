@@ -27,8 +27,8 @@ namespace brigadier
     class CommandContext
     {
     public:
-        CommandContext(S source, CommandNode<CharT, S>* root, size_t start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, start)) {}
-        CommandContext(S source, CommandNode<CharT, S>* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, range)) {}
+        CommandContext(S source, CommandNode<CharT, S> const* root, size_t start) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, start)) {}
+        CommandContext(S source, CommandNode<CharT, S> const* root, StringRange range) : source(std::move(source)), context(std::make_unique<detail::CommandContextInternal<CharT, S>>(root, range)) {}
         CommandContext(CommandContext<CharT, S>&&) = default;
         explicit CommandContext(CommandContext<CharT, S> const&) = default;
 
@@ -43,7 +43,7 @@ namespace brigadier
         inline RedirectModifier<CharT, S> GetRedirectModifier() const;
         inline StringRange GetRange() const;
         inline std::basic_string_view<CharT> GetInput() const;
-        inline CommandNode<CharT, S>* GetRootNode() const;
+        inline CommandNode<CharT, S> const* GetRootNode() const;
         inline std::vector<ParsedCommandNode<CharT, S>>& GetNodes() const;
     protected:
         inline detail::CommandContextInternal<CharT, S>* GetInternalContext() const;
@@ -77,11 +77,11 @@ namespace brigadier
         inline CommandContext<CharT, S>& WithSource(S source);
         inline CommandContext<CharT, S>& WithArgument(std::basic_string_view<CharT> name, std::shared_ptr<IParsedArgument<CharT, S>> argument);
         inline CommandContext<CharT, S>& WithCommand(Command<CharT, S> command);
-        inline CommandContext<CharT, S>& WithNode(CommandNode<CharT, S>* node, StringRange range);
+        inline CommandContext<CharT, S>& WithNode(CommandNode<CharT, S> const* node, StringRange range);
         inline CommandContext<CharT, S>& WithChildContext(CommandContext<CharT, S> childContext);
 
         inline void Reset();
-        inline void Reset(S src, CommandNode<CharT, S>* root)
+        inline void Reset(S src, CommandNode<CharT, S> const* root)
         {
             Reset();
             source.~S();
@@ -90,13 +90,13 @@ namespace brigadier
             ctx.rootNode = root;
         }
     public:
-        inline void Reset(S source, CommandNode<CharT, S>* root, size_t start)
+        inline void Reset(S source, CommandNode<CharT, S> const* root, size_t start)
         {
             Reset(source, root);
             detail::CommandContextInternal<CharT, S>& ctx = *context;
             ctx.range = StringRange::At(start);
         }
-        inline void Reset(S source, CommandNode<CharT, S>* root, StringRange range)
+        inline void Reset(S source, CommandNode<CharT, S> const* root, StringRange range)
         {
             Reset(source, root);
             detail::CommandContextInternal<CharT, S>& ctx = *context;
@@ -125,8 +125,8 @@ namespace brigadier
         class CommandContextInternal
         {
         public:
-            CommandContextInternal(CommandNode<CharT, S>* root, size_t start) : rootNode(root), range(StringRange::At(start)) {}
-            CommandContextInternal(CommandNode<CharT, S>* root, StringRange range) : rootNode(root), range(std::move(range)) {}
+            CommandContextInternal(CommandNode<CharT, S> const* root, size_t start) : rootNode(root), range(StringRange::At(start)) {}
+            CommandContextInternal(CommandNode<CharT, S> const* root, StringRange range) : rootNode(root), range(std::move(range)) {}
             CommandContextInternal(CommandContextInternal<CharT, S>&&) = default;
             explicit CommandContextInternal(CommandContextInternal<CharT, S> const&) = default;
         protected:
@@ -134,7 +134,7 @@ namespace brigadier
 
             std::map<std::basic_string<CharT>, std::shared_ptr<IParsedArgument<CharT, S>>, std::less<>> arguments;
             Command<CharT, S> command = nullptr;
-            CommandNode<CharT, S>* rootNode = nullptr;
+            CommandNode<CharT, S> const* rootNode = nullptr;
             std::vector<ParsedCommandNode<CharT, S>> nodes;
             StringRange range;
             CommandContext<CharT, S>* parent = nullptr;
@@ -298,7 +298,7 @@ namespace brigadier
     }
 
     template<typename CharT, typename S>
-    inline CommandNode<CharT, S>* CommandContext<CharT, S>::GetRootNode() const
+    inline CommandNode<CharT, S> const* CommandContext<CharT, S>::GetRootNode() const
     {
         return context->rootNode;
     }
@@ -365,7 +365,7 @@ namespace brigadier
     }
 
     template<typename CharT, typename S>
-    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithNode(CommandNode<CharT, S>* node, StringRange range)
+    inline CommandContext<CharT, S>& CommandContext<CharT, S>::WithNode(CommandNode<CharT, S> const* node, StringRange range)
     {
         if (node)
         {

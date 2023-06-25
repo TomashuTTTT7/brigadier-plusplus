@@ -29,13 +29,13 @@ namespace brigadier
         using type = T;
     public:
         template<typename CharT>
-        T Parse(StringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader) const
         {
             return reader.template ReadValue<T>();
         }
 
         template<typename CharT, typename S>
-        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const
         {
             return Suggestions<CharT>::Empty();
         }
@@ -70,13 +70,13 @@ namespace brigadier
     public:
         StringArgumentType() {};
 
-        StringArgType GetType()
+        static constexpr StringArgType GetType()
         {
             return str_type;
         }
 
         template<typename = void>
-        std::basic_string<CharT> Parse(StringReader<CharT>& reader)
+        std::basic_string<CharT> Parse(StringReader<CharT>& reader) const
         {
             if (str_type == StringArgType::GREEDY_PHRASE)
             {
@@ -179,7 +179,7 @@ namespace brigadier
     {
     public:
         template<typename CharT, typename S>
-        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const
         {
             builder.AutoSuggestLowerCase(std::initializer_list({ BRIGADIER_LITERAL(CharT, "true"), BRIGADIER_LITERAL(CharT, "false") }));
             return builder.BuildFuture();
@@ -207,7 +207,7 @@ namespace brigadier
     {
     public:
         template<typename = void>
-        CharT Parse(StringReader<CharT>& reader)
+        CharT Parse(StringReader<CharT>& reader) const
         {
             if (reader.CanRead())
                 return reader.Read();
@@ -240,15 +240,15 @@ namespace brigadier
     public:
         ArithmeticArgumentType(T minimum = std::numeric_limits<T>::lowest(), T maximum = (std::numeric_limits<T>::max)()) : minimum(minimum), maximum(maximum) {}
 
-        T GetMinimum() {
+        T GetMinimum() const {
             return minimum;
         }
-        T GetMaximum() {
+        T GetMaximum() const {
             return maximum;
         }
 
         template<typename CharT>
-        T Parse(StringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader) const
         {
             size_t start = reader.GetCursor();
             T result = reader.template ReadValue<T>();
@@ -323,7 +323,7 @@ namespace brigadier
         static_assert(std::is_enum_v<T>, "T must be enum");
     public:
         template<typename CharT>
-        T Parse(StringReader<CharT>& reader)
+        T Parse(StringReader<CharT>& reader) const
         {
             size_t start = reader.GetCursor();
             auto str = reader.ReadString();
@@ -337,7 +337,7 @@ namespace brigadier
         }
 
         template<typename CharT, typename S>
-        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const
         {
             static constexpr auto names = magic_enum::enum_names<T>();
             builder.AutoSuggestLowerCase(names);

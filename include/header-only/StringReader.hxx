@@ -60,7 +60,7 @@ namespace brigadier
         StringReader() {}
 
         inline std::basic_string_view<CharT> GetString()                const { return string; }
-        inline void                          SetCursor(size_t cursor) { this->cursor = cursor; }
+        inline void                          SetCursor(size_t cursor)         { this->cursor = cursor; }
         inline ptrdiff_t                     GetRemainingLength()       const { return string.length() - cursor; }
         inline size_t                        GetTotalLength()           const { return string.length(); }
         inline size_t                        GetCursor()                const { return cursor; }
@@ -68,8 +68,8 @@ namespace brigadier
         inline std::basic_string_view<CharT> GetRemaining()             const { return string.substr(cursor); }
         inline bool                          CanRead(size_t length = 1) const { return (cursor + length) <= string.length(); }
         inline CharT                         Peek(size_t offset = 0)    const { return string.at(cursor + offset); }
-        inline CharT                         Read() { return string.at(cursor++); }
-        inline void                          Skip() { cursor++; }
+        inline CharT                         Read()                           { return string.at(cursor++); }
+        inline void                          Skip()                           { cursor++; }
     public:
         inline void SkipWhitespace() {
             while (CanRead() && std::isspace(Peek())) {

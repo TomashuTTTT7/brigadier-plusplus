@@ -23,10 +23,10 @@ namespace brigadier
         }
         explicit LiteralCommandNode(LiteralCommandNode<CharT, S>&) = default;
         virtual ~LiteralCommandNode() = default;
-        virtual std::basic_string<CharT> const& GetName() { return literal; }
-        virtual std::basic_string<CharT> GetUsageText() { return literal; }
-        virtual std::vector<std::basic_string_view<CharT>> GetExamples() { return { literal }; }
-        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder)
+        virtual std::basic_string<CharT> const& GetName() const { return literal; }
+        virtual std::basic_string<CharT> GetUsageText() const { return literal; }
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() const { return { literal }; }
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) const
         {
             size_t start = reader.GetCursor();
             size_t end = Parse(reader);
@@ -37,22 +37,22 @@ namespace brigadier
 
             throw exceptions::LiteralIncorrect(reader, literal);
         }
-        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder)
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const
         {
             if (builder.AutoSuggest(literalLowerCase, builder.GetRemainingLowerCase()))
                 return builder.BuildFuture();
             else
                 return Suggestions<CharT>::Empty();
         }
-        virtual CommandNodeType GetNodeType() { return CommandNodeType::LiteralCommandNode; }
+        virtual CommandNodeType GetNodeType() const { return CommandNodeType::LiteralCommandNode; }
     protected:
-        virtual bool IsValidInput(std::basic_string_view<CharT> input) {
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) const {
             StringReader<CharT> reader(input);
             return Parse(reader) != size_t(-1);
         }
-        virtual std::basic_string_view<CharT> GetSortedKey() { return literal; }
+        virtual std::basic_string_view<CharT> GetSortedKey() const { return literal; }
     private:
-        size_t Parse(StringReader<CharT>& reader)
+        size_t Parse(StringReader<CharT>& reader) const
         {
             size_t start = reader.GetCursor();
             if (reader.CanRead(literal.length())) {

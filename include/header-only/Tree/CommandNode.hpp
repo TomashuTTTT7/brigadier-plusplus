@@ -84,7 +84,7 @@ namespace brigadier
             return modifier;
         }
 
-        inline Predicate<S&> GetRequirement()
+        inline Predicate<S&> GetRequirement() const
         {
             return requirement;
         }
@@ -94,7 +94,7 @@ namespace brigadier
             return forks;
         }
 
-        inline bool CanUse(S& source)
+        inline bool CanUse(S& source) const
         {
             if (requirement)
                 return requirement(source);
@@ -148,7 +148,7 @@ namespace brigadier
 
         \param consumer a callback to be notified of potential ambiguities
         */
-        void FindAmbiguities(AmbiguityConsumer<CharT, S> consumer)
+        void FindAmbiguities(AmbiguityConsumer<CharT, S> consumer) const
         {
             if (!consumer)
                 return;
@@ -175,7 +175,7 @@ namespace brigadier
             }
         }
 
-        std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t> GetRelevantNodes(StringReader<CharT>& input)
+        std::tuple<std::shared_ptr<CommandNode<CharT, S>> const*, size_t> GetRelevantNodes(StringReader<CharT>& input) const
         {
             if (literals.size() > 0) {
                 size_t cursor = input.GetCursor();
@@ -186,18 +186,18 @@ namespace brigadier
                 input.SetCursor(cursor);
                 auto literal = children.find(text);
                 if (literal != children.end() && literal->second->GetNodeType() == CommandNodeType::LiteralCommandNode) {
-                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>(&literal->second, 1);
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>> const*, size_t>(&literal->second, 1);
                 }
                 else {
-                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
+                    return std::tuple<std::shared_ptr<CommandNode<CharT, S>> const*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
                 }
             }
             else {
-                return std::tuple<std::shared_ptr<CommandNode<CharT, S>>*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
+                return std::tuple<std::shared_ptr<CommandNode<CharT, S>> const*, size_t>((std::shared_ptr<CommandNode<CharT, S>>*)arguments.data(), arguments.size());
             }
         }
 
-        bool HasCommand()
+        bool HasCommand() const
         {
             if (GetCommand() != nullptr) return true;
             for (auto [name, child] : children)
@@ -206,16 +206,16 @@ namespace brigadier
             return false;
         }
     public:
-        virtual std::basic_string<CharT> const& GetName() = 0;
-        virtual std::basic_string<CharT> GetUsageText() = 0;
-        virtual std::vector<std::basic_string_view<CharT>> GetExamples() = 0;
-        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) = 0;
-        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) = 0;
+        virtual std::basic_string<CharT> const& GetName() const = 0;
+        virtual std::basic_string<CharT> GetUsageText() const = 0;
+        virtual std::vector<std::basic_string_view<CharT>> GetExamples() const = 0;
+        virtual void Parse(StringReader<CharT>& reader, CommandContext<CharT, S>& contextBuilder) const = 0;
+        virtual std::future<Suggestions<CharT>> ListSuggestions(CommandContext<CharT, S>& context, SuggestionsBuilder<CharT>& builder) const = 0;
 
-        virtual CommandNodeType GetNodeType() = 0;
+        virtual CommandNodeType GetNodeType() const = 0;
     protected:
-        virtual bool IsValidInput(std::basic_string_view<CharT> input) = 0;
-        virtual std::basic_string_view<CharT> GetSortedKey() = 0;
+        virtual bool IsValidInput(std::basic_string_view<CharT> input) const = 0;
+        virtual std::basic_string_view<CharT> GetSortedKey() const = 0;
     public:
         template<template<typename> typename Type, typename... Args>
         auto& Then(std::basic_string_view<CharT> name, Args&&... args) {
