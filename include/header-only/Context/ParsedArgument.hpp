@@ -11,8 +11,8 @@ namespace brigadier
         static constexpr TypeInfo Create() { return TypeInfo((void*)ArgType::template GetTypeName<CharT>().data(), (sizeof(typename ArgType::type) << 16) + sizeof(ArgType)); }
         template<typename CharT, template<typename> typename ArgType>
         inline static constexpr TypeInfo Create() { return Create<CharT, ArgType<CharT>>(); }
-        inline bool operator==(TypeInfo const& other) { return (typeName == other.typeName) && (sizes == other.sizes); }
-        inline bool operator!=(TypeInfo const& other) { return !(*this == other); }
+        inline bool operator==(TypeInfo const& other) const { return (typeName == other.typeName) && (sizes == other.sizes); }
+        inline bool operator!=(TypeInfo const& other) const { return !(*this == other); }
         void* typeName = nullptr;
         size_t sizes = 0;
     };
