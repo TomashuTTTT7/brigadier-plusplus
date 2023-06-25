@@ -888,7 +888,7 @@ namespace brigadier
             result.clear();
         }
 
-        ~SuggestionsBuilder<CharT>() = default;
+        ~SuggestionsBuilder() = default;
     private:
         size_t start = 0;
         std::basic_string_view<CharT> input;
@@ -1944,7 +1944,7 @@ namespace brigadier
     public:
         StringArgumentType() {};
 
-        StringArgType GetType()
+        static constexpr StringArgType GetType()
         {
             return str_type;
         }

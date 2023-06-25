@@ -135,7 +135,7 @@ namespace brigadier
             result.clear();
         }
 
-        ~SuggestionsBuilder<CharT>() = default;
+        ~SuggestionsBuilder() = default;
     private:
         size_t start = 0;
         std::basic_string_view<CharT> input;
